@@ -50,6 +50,15 @@ var PYRET = (function () {
       dict : stringDict
     };
 
+    function PBool(b){
+      this.b = b;
+    }
+    function makeBool(b) { return new PBool(b); }
+    function isBool(v) { return v instanceof PBool; }
+    PBool.prototype = {
+      dict : boolDict
+    }
+
     function equal(val1, val2) {
       if(isNumber(val1) && isNumber(val2)) {
         return val1.n === val2.n;
