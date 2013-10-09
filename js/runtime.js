@@ -66,6 +66,9 @@ var PYRET = (function () {
       else if (isString(val1) && isString(val2)) {
         return val1.s === val2.s;
       }
+      else if (isBool(val1) && isBool(val2)){
+        return val1.b === val2.b;
+      }
       return false;
     }
 
@@ -75,6 +78,9 @@ var PYRET = (function () {
       }
       else if (isString(val)) {
         return makeString('"' + val.s + '"');
+      }
+      else if (isBool(val)) {
+        return makeString(String(val.b));
       }
       else if (isFunction(val)) {
         return makeString("fun: end");
