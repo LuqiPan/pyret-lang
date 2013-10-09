@@ -1,6 +1,22 @@
 var PYRET = (function () {
 
   function makeRuntime() {
+    /*
+    p-num
+    p-bool
+    p-str
+    p-fun
+    p-method
+    p-nothing
+
+    ---------------------
+
+    p-base
+    p-object
+    p-mutable
+    p-placeholder
+    */
+    
     function PMethod(f) {
       this.method = f;
     }
@@ -50,11 +66,15 @@ var PYRET = (function () {
       dict : stringDict
     };
 
-    function PBool(b){
+    var boolDict = {
+
+    };
+
+    function PBoolean(b){
       this.b = b;
     }
-    function makeBool(b) { return new PBool(b); }
-    function isBool(v) { return v instanceof PBool; }
+    function makeBoolean(b) { return new PBool(b); }
+    function isBoolean(v) { return v instanceof PBool; }
     PBool.prototype = {
       dict : boolDict
     }

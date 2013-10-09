@@ -62,6 +62,10 @@ fun expr-to-js(ast):
       end
     | s_num(_, n) =>
       format("RUNTIME.makeNumber(~a)", [n])
+    | s_bool(_, b) =>
+      format("RUNTIME.makeBoolean(~a)", [b])
+    | s_str(_, s) =>
+      format("RUNTIME.makeString(~a)", [s])
     | s_app(_, f, args) =>
       format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
     | s_bracket(_, obj, f) =>
