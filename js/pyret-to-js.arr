@@ -79,6 +79,15 @@ fun expr-to-js(ast):
       #need more info about default arguments
       #how to define doc?
       format("function(~a) {\n ~a ~a }\n", [params.map(js-id-of).join-str(","), default, expr-to-js(body)])
+    | s_method(_, args, ann, doc, body, _) =>
+      #nearly identical to s_lam, but need more info
+      nothing
+    | s_obj(_, fields) =>
+      fun js-field-init(field :: Member)
+        format("this.~a = ~a", [js-id-of(field.name), expr-to-js(field.value)])
+      end
+      format("function() {\n ~a;\n}\n", [fields.map(js-field-init).join-str(";\n")])
+
     | s_num(_, n) =>
       format("RUTIME.makeNumber(~a)", [n])
     | s_bool(_, b) =>
