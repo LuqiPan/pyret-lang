@@ -16,7 +16,7 @@ var PYRET = (function () {
     p-mutable
     p-placeholder
     */
-    
+
     function PMethod(f) {
       this.method = f;
     }
@@ -77,6 +77,18 @@ var PYRET = (function () {
     function isBoolean(v) { return v instanceof PBool; }
     PBool.prototype = {
       dict : boolDict
+    }
+
+    var objDict = {
+
+    }
+    function PObject(o){
+      this.o = o;
+    }
+    function makeObject(o) { return new PObject(o); }
+    function isObject(v) { return v instanceof PObject; }
+    PObject.prototype = {
+      dict : objDict
     }
 
     function equal(val1, val2) {
