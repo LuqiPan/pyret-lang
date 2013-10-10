@@ -82,26 +82,28 @@ fun expr-to-js(ast):
     | s_method(_, args, ann, doc, body, _) =>
       #nearly identical to s_lam, but need more info
       nothing
+    | s_extend(_, super, fields) =>
+      #not sure
+      nothing
     | s_obj(_, fields) =>
       fun js-field-init(field :: Member)
         format("this.~a = ~a", [js-id-of(field.name), expr-to-js(field.value)])
       end
       format("function() {\n ~a;\n}\n", [fields.map(js-field-init).join-str(";\n")])
-
+    | s_app(_, f, args) =>
+      format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
+    | s_id(_, id) => js-id-of(id)
     | s_num(_, n) =>
       format("RUTIME.makeNumber(~a)", [n])
     | s_bool(_, b) =>
       format("RUNTIME.makeBoolean(~a)", [b])
     | s_str(_, s) =>
       format("RUNTIME.makeString(~a)", [s])
-    | s_app(_, f, args) =>
-      format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
     | s_bracket(_, obj, f) =>
       cases (A.Expr) f:
         | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])
         | else => raise("Non-string lookups not supported")
       end
-    | s_id(_, id) => js-id-of(id)
     | else => do-block(format("throw new Error('Not yet implemented ~a')", [torepr(ast)]))
   end
 end
