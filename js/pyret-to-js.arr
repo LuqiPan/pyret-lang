@@ -60,8 +60,24 @@ fun expr-to-js(ast):
         end
         format("(function(){\n ~a \n})()", [sequence-return-last(stmts)])
       end
+    | s_user_block(_, body) =>
+      expr-to-js(body)
+    | s_var(_, name, value) =>
+      format("~a = ~a",[js-id-of(name), expr-to-js(value)])
+    | s_let(_, name, value) =>
+      #not sure
+      nothing
+    | s_assign(_, id, value) =>
+      format("~a = ~a",[js-id-of(id), expr-to-js(value)])
+    | s_if_else(_, branches, _else) =>
+      #not sure
+      nothing
+    | s_try(_, body, id, _except) =>
+      format("try\n {\n ~a }\n catch(~a)\n{\n ~a }\n", [expr-to-js(body), js-id-of(id), expr-to-js(_except)])
+    | s_lam(_, params, args, _, doc, body, _) =>
+      
     | s_num(_, n) =>
-      format("RUNTIME.makeNumber(~a)", [n])
+      format("RUTIME.makeNumber(~a)", [n])
     | s_bool(_, b) =>
       format("RUNTIME.makeBoolean(~a)", [b])
     | s_str(_, s) =>
