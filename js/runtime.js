@@ -8,14 +8,17 @@ var PYRET = (function () {
     p-fun
     p-method
     p-nothing
+    p-object
 
     ---------------------
 
     p-base
-    p-object
     p-mutable
     p-placeholder
     */
+
+    function PBase(){}
+    function isBase(v){ return v instanceof PBase }
 
     function PMethod(f) {
       this.method = f;
@@ -39,6 +42,9 @@ var PYRET = (function () {
     var numberDict = {
       _plus: makeMethod(function(left, right) {
         return makeNumber(left.n + right.n);
+      }),
+      _minus: makeMethod(function(left, right) {
+        return makeNumber(left.n - right.n);
       })
     };
 
@@ -47,9 +53,9 @@ var PYRET = (function () {
     }
     function makeNumber(n) { return new PNumber(n); }
     function isNumber(v) { return v instanceof PNumber; }
-    PNumber.prototype = {
-      dict : numberDict
-    };
+    PNumber.prototype = Object.create(PBase.prototype);
+    PNumber.prototype.app = function() { throw "Cannot apply numbers."; };
+    PNumber.prototype.dict = numberDict;
 
     var stringDict = {
       _plus: makeMethod(function(left, right) {
