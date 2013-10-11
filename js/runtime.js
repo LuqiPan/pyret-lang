@@ -9,17 +9,19 @@ var PYRET = (function () {
     p-method
     p-nothing
     p-object
+    p-base
 
     ---------------------
 
-    p-base
     p-mutable
     p-placeholder
     */
 
+    //p-base
     function PBase(){}
     function isBase(v){ return v instanceof PBase }
 
+    //p-method
     function PMethod(f) {
       this.method = f;
     }
@@ -30,6 +32,7 @@ var PYRET = (function () {
       dict: {}
     };
 
+    //p-fun
     function PFunction(f) {
       this.app = f;
     }
@@ -39,6 +42,7 @@ var PYRET = (function () {
       dict: {} 
     };
 
+    //p-num
     var numberDict = {
       _plus: makeMethod(function(left, right) {
         return makeNumber(left.n + right.n);
@@ -57,6 +61,7 @@ var PYRET = (function () {
     PNumber.prototype.app = function() { throw "Cannot apply numbers."; };
     PNumber.prototype.dict = numberDict;
 
+    //p-str
     var stringDict = {
       _plus: makeMethod(function(left, right) {
         return makeString(left.s + right.s);
@@ -68,10 +73,11 @@ var PYRET = (function () {
     }
     function makeString(s) { return new PString(s); }
     function isString(v) { return v instanceof PString; }
-    PString.prototype = {
-      dict : stringDict
-    };
+    PString.prototype = Object.create(PBase.prototype);
+    PString.prototype.app = function() { throw "Cannot apply numbers."; };
+    PString.prototype.dict = stringDict;
 
+    //p-bool
     var boolDict = {
 
     };
@@ -81,10 +87,11 @@ var PYRET = (function () {
     }
     function makeBoolean(b) { return new PBool(b); }
     function isBoolean(v) { return v instanceof PBool; }
-    PBool.prototype = {
-      dict : boolDict
-    }
+    PBool.prototype = Object.create(PBase.prototype);
+    PBool.prototype.app = function() { throw "Cannot apply numbers."; };
+    PBool.prototype.dict = boolDict;
 
+    //p-obj
     var objDict = {
 
     }
@@ -93,9 +100,10 @@ var PYRET = (function () {
     }
     function makeObject(o) { return new PObject(o); }
     function isObject(v) { return v instanceof PObject; }
-    PObject.prototype = {
-      dict : objDict
-    }
+    PObject.prototype = Object.create(PBase.prototype);
+    PObject.prototype.app = function() { throw "Cannot apply numbers."; };
+    PObject.prototype.dict = objDict;
+
 
     function equal(val1, val2) {
       if(isNumber(val1) && isNumber(val2)) {
