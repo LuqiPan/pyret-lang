@@ -98,7 +98,7 @@ fun expr-to-js(ast):
     | s_bool(_, b) =>
       format("RUNTIME.makeBoolean(~a)", [b])
     | s_str(_, s) =>
-      format("RUNTIME.makeString(~a)", [s])
+      format("RUNTIME.makeString("~a")", [s])
     | s_bracket(_, obj, f) =>
       cases (A.Expr) f:
         | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])
