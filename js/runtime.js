@@ -123,7 +123,18 @@ var PYRET = (function () {
 
     //p-bool
     var boolDict = {
-
+      _and: makeMethod(function(left, right) {
+        return makeBool(left.b && right.b);
+      }),
+      _or: makeMethod(function(left, right) {
+        return makeBool(left.b || right.b);
+      }),
+      _equals: makeMethod(function(left, right) {
+        return makeBool(left.b === right.b);
+      }),
+      _not: makeMethod(function(val) {
+        return makeBool(!val.b);
+      })
     };
 
     function PBool(b){
