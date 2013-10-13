@@ -102,13 +102,16 @@ var PYRET = (function () {
     function makeNumber(n) { return new PNumber(n); }
     function isNumber(v) { return v instanceof PNumber; }
     PNumber.prototype = Object.create(PBase.prototype);
-    PNumber.prototype.app = function() { throw "Cannot apply numbers."; };
+    PNumber.prototype.app = function() { throw "check-fun: expected function, got number"; };
     PNumber.prototype.dict = numberDict;
 
     //p-str
     var stringDict = {
       _plus: makeMethod(function(left, right) {
         return makeString(left.s + right.s);
+      }),
+      contains: makeMethod(function(str, substr) {
+        return makeBool(str.s.indexOf(substr.s) != -1);
       })
     };
 
@@ -230,6 +233,10 @@ var PYRET = (function () {
       nothing: {},
       makeNumber: makeNumber,
       isNumber: isNumber,
+      makeString: makeString,
+      isString: isString,
+      makeBool: makeBool,
+      isBool: isBool,
       equal: equal,
       getField: getField,
       getTestPrintOutput: function(val) {
