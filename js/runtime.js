@@ -112,6 +112,18 @@ var PYRET = (function () {
       }),
       contains: makeMethod(function(str, substr) {
         return makeBool(str.s.indexOf(substr.s) != -1);
+      }),
+      replace: makeMethod(function(str, oldvalue, newvalue) {
+        return makeString(str.s.replace(new RegExp(oldvalue.s, 'g'), newvalue.s));
+      }),
+      substring: makeMethod(function(str, from, to) {
+        return makeString(str.s.substring(from.n, to.n));
+      }),
+      tostring: makeMethod(function(str) {
+        return makeString(str.s);
+      }),
+      tonumber: makeMethod(function(str) {
+        return makeNumber(parseInt(str.s));
       })
     };
 
