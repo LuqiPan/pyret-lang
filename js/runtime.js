@@ -27,10 +27,9 @@ var PYRET = (function () {
     }
     function makeMethod(f) { return new PMethod(f); } 
     function isMethod(v) { return v instanceof PMethod; }
-    PMethod.prototype = {
-      app: function() { throw "Cannot apply method directly."; },
-      dict: {}
-    };
+    PMethod.prototype = Object.create(PBase.prototype);
+    PMethod.prototype.app = function() { throw "Cannot apply method directly."; };
+    PMethod.prototype.dict = {};
 
     //p-fun
     function PFunction(f) {
@@ -38,9 +37,9 @@ var PYRET = (function () {
     }
     function makeFunction(f) { return new PFunction(f); }
     function isFunction(v) { return v instanceof PFunction; }
-    PFunction.prototype = {
-      dict: {} 
-    };
+    PFunction.prototype = Object.create(PBase.prototype);
+    PFunction.prototype.app = function() { throw "Cannot apply method directly."; };
+    PFunction.prototype.dict = {};
 
     //p-num
     var numberDict = {
@@ -68,6 +67,9 @@ var PYRET = (function () {
       }),
       floor: makeMethod(function(val) {
         return makeNumber(Math.floor(val.n));
+      }),
+      ceiling: makeMethod(function(val) {
+        return makeNumber(Math.ceil(val.n));
       }),
       exp: makeMethod(function(val) {
         return makeNumber(Math.exp(val.n));
