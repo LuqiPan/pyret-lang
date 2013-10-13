@@ -45,11 +45,55 @@ var PYRET = (function () {
     //p-num
     var numberDict = {
       _plus: makeMethod(function(left, right) {
-        return makeNumber(left.n + right.n);
+        if (isNumber(left) && isNumber(right))
+        { return makeNumber(left.n + right.n); }
+        else
+        { throw "Type error"; };
       }),
       _minus: makeMethod(function(left, right) {
         return makeNumber(left.n - right.n);
+      }),
+      _times: makeMethod(function(left, right) {
+        return makeNumber(left.n * right.n);
+      }),
+      _divide: makeMethod(function(left, right) {
+        if (right.n !== 0) {
+          return makeNumber(left.n / right.n);
+        }
+        else
+          { throw "Cannot divide by 0"; };
+      }),
+      _equals: makeMethod(function(left, right) {
+        return makeBool(left.n === right.n);
+      }),
+      floor: makeMethod(function(val) {
+        return makeNumber(Math.floor(val.n));
+      }),
+      exp: makeMethod(function(val) {
+        return makeNumber(Math.exp(val.n));
+      }),
+      _lessthan: makeMethod(function(left, right) {
+        return makeBool(left.n < right.n);
+      }),
+      _greaterthan: makeMethod(function(left, right) {
+        return makeBool(left.n > right.n);
+      }),
+      _lessequal: makeMethod(function(left, right) {
+        return makeBool(left.n <= right.n);
+      }),
+      _greaterequal: makeMethod(function(left, right) {
+        return makeBool(left.n >= right.n);
+      }),
+      max: makeMethod(function(left, right) {
+        return makeNumber(Math.max(left.n, right.n));
+      }),
+      min: makeMethod(function(left, right) {
+        return makeNumber(Math.min(left.n, right.n));
+      }),
+      tostring: makeMethod(function(val) {
+        return makeString(val.n.toString());
       })
+
     };
 
     function PNumber(n) {
@@ -74,7 +118,7 @@ var PYRET = (function () {
     function makeString(s) { return new PString(s); }
     function isString(v) { return v instanceof PString; }
     PString.prototype = Object.create(PBase.prototype);
-    PString.prototype.app = function() { throw "Cannot apply numbers."; };
+    PString.prototype.app = function() { throw "Cannot apply strings."; };
     PString.prototype.dict = stringDict;
 
     //p-bool
@@ -82,13 +126,13 @@ var PYRET = (function () {
 
     };
 
-    function PBoolean(b){
+    function PBool(b){
       this.b = b;
     }
-    function makeBoolean(b) { return new PBool(b); }
-    function isBoolean(v) { return v instanceof PBool; }
+    function makeBool(b) { return new PBool(b); }
+    function isBool(v) { return v instanceof PBool; }
     PBool.prototype = Object.create(PBase.prototype);
-    PBool.prototype.app = function() { throw "Cannot apply numbers."; };
+    PBool.prototype.app = function() { throw "Cannot apply bools."; };
     PBool.prototype.dict = boolDict;
 
     //p-obj

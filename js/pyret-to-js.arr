@@ -36,6 +36,8 @@ fun program-to-js(ast, runtime-ids):
         }
        })", [bindings, expr-to-js(block)])
   end
+where:
+  program-to-js(A.parse-tc("4<=1", "test", {check : false, env : []}), []) is ""
 end
 
 fun do-block(str):
@@ -62,59 +64,20 @@ fun expr-to-js(ast):
       end
     | s_user_block(_, body) =>
       expr-to-js(body)
-    | s_var(_, name, value) =>
-      format("~a = ~a;\n",[js-id-of(name), expr-to-js(value)])
-    | s_let(_, name, value) =>
-      #not sure
-      nothing
-
-    | s_assign(_, id, value) =>
-      #May need to verify id is in environment
-      format("~a = ~a;\n",[js-id-of(id), expr-to-js(value)])
-    | s_if_else(_, branches, _else) =>
-      #not sure
-      fun compile-if-branch(bs):
-        cases(list.List) bs:
-	  | link(f, r) =>
-	    cases(list.List) r:
-	      | empty => format("if (~a) {\n ~a }\n".[expr-to-js(f.test), expr-to-js(f.block)])
-	      | link(_, _) =>
-	        format("if (~a) {\n ~a }\nelse ~a",[expr-to-js(f.test), expr-to-js(f.blcok), compile-if-branch(r)])
-	end
-      end
-
-    | s_try(_, body, id, _except) =>
-      format("try\n {\n ~a }\n catch(~a)\n{\n ~a }\n", [expr-to-js(body), js-id-of(id), expr-to-js(_except)])
-    | s_lam(_, params, args, _, doc, body, _) =>
-      var default = ""
-      #need more info about default arguments
-      #how to define doc?
-      format("function(~a) {\n ~a ~a }\n", [params.map(js-id-of).join-str(","), default, expr-to-js(body)])
-    | s_method(_, args, ann, doc, body, _) =>
-      #nearly identical to s_lam, but need more info
-      nothing
-    | s_extend(_, super, fields) =>
-      #not sure
-      nothing
-    | s_obj(_, fields) =>
-      fun js-field-init(field :: Member)
-        format("this.~a = ~a", [js-id-of(field.name), expr-to-js(field.value)])
-      end
-      format("function() {\n ~a;\n}\n", [fields.map(js-field-init).join-str(";\n")])
     | s_app(_, f, args) =>
       format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
-    | s_id(_, id) => js-id-of(id)
-    | s_num(_, n) =>
-      format("RUTIME.makeNumber(~a)", [n])
-    | s_bool(_, b) =>
-      format("RUNTIME.makeBoolean(~a)", [b])
-    | s_str(_, s) =>
-      format("RUNTIME.makeString("~a")", [s])
     | s_bracket(_, obj, f) =>
       cases (A.Expr) f:
         | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])
         | else => raise("Non-string lookups not supported")
       end
+    | s_id(_, id) => js-id-of(id)
+    | s_num(_, n) =>
+      format("RUNTIME.makeNumber(~a)", [n])
+    | s_bool(_, b) =>
+      format("RUNTIME.makeBool(~a)", [b])
+    | s_str(_, s) =>
+      format("RUNTIME.makeString('~a')", [s])
     | else => do-block(format("throw new Error('Not yet implemented ~a')", [torepr(ast)]))
   end
 end
