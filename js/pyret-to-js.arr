@@ -37,7 +37,7 @@ fun program-to-js(ast, runtime-ids):
        })", [bindings, expr-to-js(block)])
   end
 where:
-  program-to-js(A.parse-tc("4.1.ceiling()", "test", {check : false, env : []}), []) is ""
+  program-to-js(A.parse-tc("true and false", "test", {check : false, env : []}), []) is ""
 end
 
 fun do-block(str):

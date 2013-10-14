@@ -38,7 +38,6 @@ var PYRET = (function () {
     function makeFunction(f) { return new PFunction(f); }
     function isFunction(v) { return v instanceof PFunction; }
     PFunction.prototype = Object.create(PBase.prototype);
-    PFunction.prototype.app = function() { throw "Cannot apply method directly."; };
     PFunction.prototype.dict = {};
 
     //p-num
@@ -126,6 +125,9 @@ var PYRET = (function () {
       }),
       tonumber: makeMethod(function(str) {
         return makeNumber(parseInt(str.s));
+      }),
+      "char-at": makeMethod(function(str, n) {
+        return makeString(str.s.charAt(n));
       })
     };
 
@@ -240,7 +242,7 @@ var PYRET = (function () {
     function makeFailResult(exn) { return new FailResult(exn); }
 
     function errToJSON(exn) {
-      return JSON.stringify({exn: String(exn)})
+      return JSON.stringify(exn);
     }
 
     return {
@@ -251,6 +253,8 @@ var PYRET = (function () {
       isString: isString,
       makeBool: makeBool,
       isBool: isBool,
+      makeFunction: makeFunction,
+      isFunction: isFunction,
       equal: equal,
       getField: getField,
       getTestPrintOutput: function(val) {
