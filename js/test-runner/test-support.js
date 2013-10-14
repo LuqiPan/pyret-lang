@@ -43,7 +43,7 @@ function testPrint(name, pyretProg, output) {
       if (result instanceof RUNTIME.NormalResult) {
         var stdout = RUNTIME.getTestPrintOutput(result.val);
         expect(stdout).toEqual(output["expected-out"]);
-        expect("").toEqual(output["expected-err"])
+        expect("").toEqual(output["expected-err"]);
       }
       else if (result instanceof RUNTIME.FailResult) {
         expect(stdout).toEqual(output.expected);

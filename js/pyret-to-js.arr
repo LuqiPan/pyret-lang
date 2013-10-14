@@ -66,6 +66,11 @@ fun expr-to-js(ast):
       expr-to-js(body)
     | s_app(_, f, args) =>
       format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
+    | s_obj(_, fields) =>
+      fun field-to-js(field):
+        format("~a: ~a", [field.name.s, expr-to-js(field.value)])
+      end
+      format("RUNTIME.makeObject({~a})", [fields.map(field-to-js).join-str(",")])
     | s_bracket(_, obj, f) =>
       cases (A.Expr) f:
         | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])

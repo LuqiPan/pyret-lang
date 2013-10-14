@@ -65,10 +65,10 @@ var PYRET = (function () {
         return makeBool(left.n === right.n);
       }),
       floor: makeMethod(function(val) {
-        return makeNumber(Math.floor(val.n));
+        return makeNumber(Math.floor(val.n).toFixed(1));
       }),
       ceiling: makeMethod(function(val) {
-        return makeNumber(Math.ceil(val.n));
+        return makeNumber(Math.ceil(val.n).toFixed(1));
       }),
       exp: makeMethod(function(val) {
         return makeNumber(Math.exp(val.n));
@@ -166,18 +166,13 @@ var PYRET = (function () {
     PBool.prototype.dict = boolDict;
 
     //p-obj
-    var objDict = {
-
+    function PObject(objDict){
+      this.dict = objDict;
     }
-    function PObject(o){
-      this.o = o;
-    }
-    function makeObject(o) { return new PObject(o); }
+    function makeObject(objDict) { return new PObject(objDict); }
     function isObject(v) { return v instanceof PObject; }
     PObject.prototype = Object.create(PBase.prototype);
-    PObject.prototype.app = function() { throw "Cannot apply numbers."; };
-    PObject.prototype.dict = objDict;
-
+    PObject.prototype.app = function() { throw "Cannot apply objects."; };
 
     function equal(val1, val2) {
       if(isNumber(val1) && isNumber(val2)) {
@@ -242,7 +237,7 @@ var PYRET = (function () {
     function makeFailResult(exn) { return new FailResult(exn); }
 
     function errToJSON(exn) {
-      return JSON.stringify(exn);
+      return JSON.stringify({exn: String(exn)});
     }
 
     return {
@@ -255,6 +250,8 @@ var PYRET = (function () {
       isBool: isBool,
       makeFunction: makeFunction,
       isFunction: isFunction,
+      makeObject: makeObject,
+      isObject: isObject,
       equal: equal,
       getField: getField,
       getTestPrintOutput: function(val) {
