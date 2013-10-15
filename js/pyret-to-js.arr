@@ -37,7 +37,7 @@ fun program-to-js(ast, runtime-ids):
        })", [bindings, expr-to-js(block)])
   end
 where:
-  program-to-js(A.parse-tc("o = 1", "test", {check : false, env : []}), []) is ""
+  program-to-js(A.parse-tc("fun f(x): x end", "test", {check : false, env : []}), []) is ""
 end
 
 fun do-block(str):
@@ -68,15 +68,25 @@ fun expr-to-js(ast):
       format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
     | s_obj(_, fields) =>
       fun field-to-js(field):
-        format("~a: ~a", [field.name.s, expr-to-js(field.value)])
+        cases(A.Member) field:
+          | s_method_field(_,name,_,_,_,body,_) => format("s: 'dummy'",[])
+          | else =>
+            format("~a: ~a", [field.name.s, expr-to-js(field.value)])
+        end
       end
       format("RUNTIME.makeObject({~a})", [fields.map(field-to-js).join-str(",")])
+    | s_extend(_, super, fields) =>
+      fun field-to-js(field):
+        format("~a: ~a", [field.name.s, expr-to-js(field.value)])
+      end
+      format("RUNTIME.getField(~a, '_extend').app({~a})", [expr-to-js(super), fields.map(field-to-js).join-str(",")])
     | s_bracket(_, obj, f) =>
       cases (A.Expr) f:
         | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])
         | else => raise("Non-string lookups not supported")
       end
-    | s_id(_, id) => js-id-of(id)
+    | s_id(_, id) => 
+      js-id-of(id)
     | s_num(_, n) =>
       format("RUNTIME.makeNumber(~a)", [n])
     | s_bool(_, b) =>

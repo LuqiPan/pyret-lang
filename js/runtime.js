@@ -165,9 +165,24 @@ var PYRET = (function () {
     PBool.prototype.app = function() { throw "Cannot apply bools."; };
     PBool.prototype.dict = boolDict;
 
+    //p-mutable
+    function PMutable(b){
+      this.b = b;
+    }
+    function makeMutable(b) { return new PMutable(b); }
+    function isMutable(v) { return v instanceof PMutable; }
+    PMutable.prototype = Object.create(PBase.prototype);
+    PMutable.prototype.app = function() { throw "Cannot apply bools."; };
+
     //p-obj
     function PObject(objDict){
       this.dict = objDict;
+      this.dict["_extend"] = makeMethod(function(obj, extendDict) {
+        var mergeDict = {};
+        for (var key in obj.dict) { mergeDict[key] = obj.dict[key]; }
+        for (var key in extendDict) { mergeDict[key] = extendDict[key]; }
+        return makeObject(mergeDict);
+      })
     }
     function makeObject(objDict) { return new PObject(objDict); }
     function isObject(v) { return v instanceof PObject; }
@@ -203,11 +218,18 @@ var PYRET = (function () {
       else if (isMethod(val)) {
         return makeString("method: end");
       }
+      else if (isObject(val)) {
+        return makeString("object");
+      }
       throw ("toStringJS on an unknown type: " + val);
     }
 
     function getField(val, str) {
       var fieldVal = val.dict[str];
+      if (typeof fieldVal === 'undefined')
+      {
+        throw new ("value not found");
+      }
       if (isMethod(fieldVal)) {
         return makeFunction(function() {
           var argList = Array.prototype.slice.call(arguments);
@@ -252,6 +274,8 @@ var PYRET = (function () {
       isFunction: isFunction,
       makeObject: makeObject,
       isObject: isObject,
+      makeMutable: makeMutable,
+      isMutable: isMutable,
       equal: equal,
       getField: getField,
       getTestPrintOutput: function(val) {

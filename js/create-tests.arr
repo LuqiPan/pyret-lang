@@ -86,6 +86,7 @@ MISC = [
 
 fun out-file-of(filename): filename + ".out";
 fun err-file-of(filename): filename + ".err";
+fun js-file-of(filename): filename + ".js";
 
 fun error-to-json(e):
   if builtins.has-field(e, "message"):
@@ -99,36 +100,45 @@ fun generate-output(filename):
   in = F.input-file(filename)
   stdout = F.output-file(out-file-of(filename), false)
   stderr = F.output-file(err-file-of(filename), false)
+  jsout = F.output-file(js-file-of(filename), false)
+
   var the-output = ""
   fun capturing-print(val):
     the-output := the-output + torepr(val) + "\n"
     val
   end
+
   print("generating for: " + filename)
   env = N.whalesong-env.{test-print: capturing-print}
   program = A.parse(in.read-file(), "test", {check : false})
+
+  jsout.display(P.expr-to-js(program.post-desugar.block))
+
   data EvalResult:
     | success(val)
     | exn(error)
   end
+
   value :: EvalResult = try:
     success(E.eval(A.to-native(program.pre-desugar), env, {}))
   except(e):
     exn(e)
   end
+
   cases(EvalResult) value:
     | success(v) =>
       stdout.display(the-output)
       stdout.display(torepr(v))
-    | exn(e) => 
+    | exn(e) =>
       stdout.display(the-output)
       stderr.display(error-to-json(e))
   end
+
   stdout.close-file()
   stderr.close-file()
+  jsout.close-file()
   in.close-file()
 end
-
 
 fun all-tests(path):
   dir = D.dir(path)
@@ -151,7 +161,7 @@ fun read-then-close(path):
   file.close-file()
   contents
 end
-            
+
 # one level of sections for now
 fun get-dir-sections(path):
   dir = D.dir(path)
@@ -185,5 +195,3 @@ all-tests("tests")
 FILE-TESTS = get-dir-sections("tests")
 
 generate-test-files([test-section("misc", MISC)] + FILE-TESTS)
-
-
