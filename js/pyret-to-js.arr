@@ -8,6 +8,8 @@ provide *
 
 js-id-of = block:
   var js-ids = {}
+  #preserve brander identifier
+  js-ids := js-ids.{ ["brander"]: "brander"}
   fun(id :: String):
     if builtins.has-field(js-ids, id):
       js-ids.[id]
@@ -18,6 +20,10 @@ js-id-of = block:
       safe-id
     end
   end
+end
+
+fun no-dash(name :: String):
+  name.replace("-", "_DASH_")
 end
 
 fun program-to-js(ast, runtime-ids):
@@ -37,8 +43,7 @@ fun program-to-js(ast, runtime-ids):
        })", [bindings, expr-to-js(block)])
   end
 where:
-  program-to-js(A.parse-tc("x = 1
-  x", "test", {check : false, env : []}), []) is ""
+  program-to-js(A.parse-tc("{x:5}.x", "test", {check : false, env : []}), []) is ""
 end
 
 fun do-block(str):
@@ -72,22 +77,24 @@ fun expr-to-js(ast):
         cases(A.Member) field:
           | s_method_field(_,name,_,_,_,body,_) => nothing
           | else =>
-            format("~a: ~a", [field.name.s, expr-to-js(field.value)])
+            format("~a: ~a", [no-dash(field.name.s), expr-to-js(field.value)])
         end
       end
       format("RUNTIME.makeObject({~a})", [fields.map(field-to-js).join-str(",")])
     | s_extend(_, super, fields) =>
       fun field-to-js(field):
-        format("~a: ~a", [field.name.s, expr-to-js(field.value)])
+        format("~a: ~a", [no-dash(field.name.s), expr-to-js(field.value)])
       end
       format("RUNTIME.getField(~a, '_extend').app({~a})", [expr-to-js(super), fields.map(field-to-js).join-str(",")])
     | s_bracket(_, obj, f) =>
       cases (A.Expr) f:
-        | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])
+        | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), no-dash(s)])
         | else => raise("Non-string lookups not supported")
       end
     | s_let(_, name, value) =>
       format("~a = ~a",[js-id-of(name.id), expr-to-js(value)])
+    | s_assign(_, id, value) =>
+      format("~a = ~a",[js-id-of(id), expr-to-js(value)])
     | s_id(_, id) => 
       js-id-of(id)
     | s_num(_, n) =>

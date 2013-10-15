@@ -17,9 +17,70 @@ var PYRET = (function () {
     p-placeholder
     */
 
+    //brander
+    function generateUUID() {
+      var d = new Date().getTime();
+      var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = (d + Math.random()*16)%16 | 0;
+          d = Math.floor(d/16);
+          return (c=='x' ? r : (r&0x7|0x8)).toString(16);
+      });
+      return uuid;
+    };
+
+    function PBrander() {
+      var thisBrand = generateUUID();
+
+      this.dict = {};
+
+      this.dict.brand = makeMethod(function(dummy, val) {
+        if(isNumber(val)) {
+          var newVal = makeNumber(val.n);
+          newVal.brands = val.brands.concat([thisBrand]);
+          return newVal;
+        }
+        else if (isString(val)) {
+          var newVal = makeString(val.s);
+          newVal.brands = val.brands.concat([thisBrand]);
+          return newVal;
+        }
+        else if (isBool(val)) {
+          var newVal = makeBool(val.b);
+          newVal.brands = val.brands.concat([thisBrand]);
+          return newVal;
+        }
+        else if (isFunction(val)) {
+          var newVal = makeFunction(val.app);
+          newVal.brands = val.brands.concat([thisBrand]);
+          return newVal;
+        }
+        else if (isMethod(val)) {
+          var newVal = makeMethod(val.method);
+          newVal.brands = val.brands.concat([thisBrand]);
+          return newVal;
+        }
+        else if (isObject(val)) {
+          var newVal = makeObject(val.dict);
+          newVal.brands = val.brands.concat([thisBrand]);
+          return newVal;
+        }
+        throw ("Not yet implemented" + val);
+      });
+
+      this.dict.test = makeMethod(function(dummy, val) {
+        return val.brands.indexOf(thisBrand) !== -1;
+      });
+    }
+    var brander = {
+      app: function makeBrander() {
+        return new PBrander();
+      }
+    };
+
     //p-base
-    function PBase(){}
+    function PBase() {}
     function isBase(v){ return v instanceof PBase }
+    PBase.prototype.brands = new Array();
 
     //p-method
     function PMethod(f) {
@@ -264,6 +325,7 @@ var PYRET = (function () {
 
     return {
       nothing: {},
+      isBase: isBase,
       makeNumber: makeNumber,
       isNumber: isNumber,
       makeString: makeString,
@@ -276,6 +338,7 @@ var PYRET = (function () {
       isObject: isObject,
       makeMutable: makeMutable,
       isMutable: isMutable,
+      brander: brander,
       equal: equal,
       getField: getField,
       getTestPrintOutput: function(val) {
