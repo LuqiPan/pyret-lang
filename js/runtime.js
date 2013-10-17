@@ -68,11 +68,11 @@ var PYRET = (function () {
       });
 
       this.dict.test = makeMethod(function(dummy, val) {
-        return val.brands.indexOf(thisBrand) !== -1;
+        return makeBool(val.brands.indexOf(thisBrand) !== -1);
       });
     }
     var brander = {
-      app: function makeBrander() {
+      app: function() {
         return new PBrander();
       }
     };
@@ -204,10 +204,20 @@ var PYRET = (function () {
     //p-bool
     var boolDict = {
       _and: makeMethod(function(left, right) {
-        return makeBool(left.b && right.b);
+        if (!left.b) {
+          return makeBool(false);
+        }
+        else{
+          return makeBool(right.app().b);
+        }
       }),
       _or: makeMethod(function(left, right) {
-        return makeBool(left.b || right.b);
+        if (left.b) {
+          return makeBool(true);
+        }
+        else{
+          return makeBool(right.app().b);
+        }
       }),
       _equals: makeMethod(function(left, right) {
         return makeBool(left.b === right.b);
@@ -243,7 +253,7 @@ var PYRET = (function () {
         for (var key in obj.dict) { mergeDict[key] = obj.dict[key]; }
         for (var key in extendDict) { mergeDict[key] = extendDict[key]; }
         return makeObject(mergeDict);
-      })
+      });
     }
     function makeObject(objDict) { return new PObject(objDict); }
     function isObject(v) { return v instanceof PObject; }
@@ -259,6 +269,15 @@ var PYRET = (function () {
       }
       else if (isBool(val1) && isBool(val2)){
         return val1.b === val2.b;
+      }
+      else if (isObject(val1) && isObject(val2)){
+        return val1.dict === val2.dict;
+      }
+      else if (isMethod(val1) && isMethod(val2)){
+        return val1.method === val2.method;
+      }
+      else if (isFunction(val1) && isFunction(val2)){
+        return val1.app === val2.app;
       }
       return false;
     }
@@ -352,6 +371,7 @@ var PYRET = (function () {
       errToJSON: errToJSON,
 
       "test-print": makeFunction(testPrint),
+      "is-number": makeFunction(function(v){return makeBool(isNumber(v))}),
     }
   }
 

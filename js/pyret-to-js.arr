@@ -10,6 +10,7 @@ js-id-of = block:
   var js-ids = {}
   #preserve brander identifier
   js-ids := js-ids.{ ["brander"]: "brander"}
+  js-ids := js-ids.{ ["is-number"]: "isNumber"}
   fun(id :: String):
     if builtins.has-field(js-ids, id):
       js-ids.[id]
@@ -22,16 +23,12 @@ js-id-of = block:
   end
 end
 
-fun no-dash(name :: String):
-  name.replace("-", "_DASH_")
-end
-
 fun program-to-js(ast, runtime-ids):
   cases(A.Program) ast:
     # import/provide ignored
     | s_program(_, _, block) =>
       bindings = for list.fold(bs from "", id from runtime-ids):
-        bs + format("var ~a = RUNTIME['~a'];\n", [js-id-of(id), id])
+        bs + format("var ~a = RUNTIME['~a'];", [js-id-of(id), id])
       end
       format("(function(RUNTIME) {
         try {
@@ -43,7 +40,9 @@ fun program-to-js(ast, runtime-ids):
        })", [bindings, expr-to-js(block)])
   end
 where:
-  program-to-js(A.parse-tc("{x:5}.x", "test", {check : false, env : []}), []) is ""
+  program-to-js(A.parse-tc("b = brander()
+  2 is-object(b)
+  ", "test", {check : false, env : []}), []) is ""
 end
 
 fun do-block(str):
@@ -62,33 +61,41 @@ fun expr-to-js(ast):
               cases(list.List) r:
                 | empty => format("return ~a;", [expr-to-js(f)])
                 | link(_, _) =>
-                  format("~a;\n", [expr-to-js(f)]) + sequence-return-last(r)
+                  format("~a;", [expr-to-js(f)]) + sequence-return-last(r)
               end
           end
         end
-        format("(function(){\n ~a \n})()", [sequence-return-last(stmts)])
+        format("(function(){~a})()", [sequence-return-last(stmts)])
       end
     | s_user_block(_, body) =>
       expr-to-js(body)
+    | s_lam(_, params, args, _, _, body, check) =>
+      fun get-id(bind):
+        js-id-of(bind.id)
+      end
+      format("RUNTIME.makeFunction(function(~a){return ~a;})",[args.map(get-id).join-str(","), expr-to-js(body)])
     | s_app(_, f, args) =>
       format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
     | s_obj(_, fields) =>
       fun field-to-js(field):
-        cases(A.Member) field:
-          | s_method_field(_,name,_,_,_,body,_) => nothing
-          | else =>
-            format("~a: ~a", [no-dash(field.name.s), expr-to-js(field.value)])
-        end
+        format("'~a': ~a", [field.name.s, expr-to-js(field.value)])
       end
       format("RUNTIME.makeObject({~a})", [fields.map(field-to-js).join-str(",")])
     | s_extend(_, super, fields) =>
       fun field-to-js(field):
-        format("~a: ~a", [no-dash(field.name.s), expr-to-js(field.value)])
+        format("'~a': ~a", [field.name.s, expr-to-js(field.value)])
       end
       format("RUNTIME.getField(~a, '_extend').app({~a})", [expr-to-js(super), fields.map(field-to-js).join-str(",")])
+    | s_var(_, name, value) =>
+      format("~a = ~a",[js-id-of(name.id), expr-to-js(value)])
     | s_bracket(_, obj, f) =>
       cases (A.Expr) f:
-        | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), no-dash(s)])
+        | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])
+        | else => raise("Non-string lookups not supported")
+      end
+    | s_colon_bracket(_, obj, field) =>
+      cases (A.Expr) field:
+        | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])
         | else => raise("Non-string lookups not supported")
       end
     | s_let(_, name, value) =>

@@ -110,9 +110,12 @@ fun generate-output(filename):
 
   print("generating for: " + filename)
   env = N.whalesong-env.{test-print: capturing-print}
-  program = A.parse(in.read-file(), "test", {check : false})
+  contents = in.read-file()
+  program = A.parse(contents, "test", {check : false})
 
-  jsout.display(P.expr-to-js(program.post-desugar.block))
+  jsout.display(
+    P.expr-to-js(
+      A.parse-tc(contents, "test", {check : false, env : env}).block))
 
   data EvalResult:
     | success(val)
