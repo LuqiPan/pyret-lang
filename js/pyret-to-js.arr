@@ -8,9 +8,6 @@ provide *
 
 js-id-of = block:
   var js-ids = {}
-  #preserve brander identifier
-  js-ids := js-ids.{ ["brander"]: "brander"}
-  js-ids := js-ids.{ ["is-number"]: "isNumber"}
   fun(id :: String):
     if builtins.has-field(js-ids, id):
       js-ids.[id]
@@ -67,41 +64,59 @@ fun expr-to-js(ast):
         end
         format("(function(){~a})()", [sequence-return-last(stmts)])
       end
-    | s_user_block(_, body) =>
+
+    | s_user_block(l :: A.Loc, body :: A.Expr) =>
       expr-to-js(body)
+
+    | s_var(l :: A.Loc, name :: A.Bind, value :: A.Expr) =>
+      format("~a = ~a", [js-id-of(name.id), expr-to-js(value)])
+
+    | s_let(l :: A.Loc, name :: A.Bind, value :: A.Expr) =>
+      format("~a = ~a",[js-id-of(name.id), expr-to-js(value)])
+
+    | s_assign(l :: A.Loc, id :: String, value :: A.Expr) =>
+      format("~a = ~a", [js-id-of(id), expr-to-js(value)])
+
+    #| s_if_else(l :: A.Loc, branches :: list.List<IfBranch>, _else :: A.Expr) =>
+
+    #| s_try(l :: A.Loc, body :: A.Expr, id :: A.Bind, _except :: A.Expr) => nothing
+
     | s_lam(_, params, args, _, _, body, check) =>
       fun get-id(bind):
         js-id-of(bind.id)
       end
-      format("RUNTIME.makeFunction(function(~a){return ~a;})",[args.map(get-id).join-str(","), expr-to-js(body)])
+      format("RUNTIME.makeFunction(function(~a) { return ~a; })", [args.map(get-id).join-str(","), expr-to-js(body)])
+
+    | s_method(l :: A.Loc, args :: list.List<A.Bind>, ann :: A.Ann, doc :: String, body :: A.Expr, check :: A.Expr) =>
+      format("RUNTIME.makeMethod(function(~a) { return ~a; })", [args.map(fun (x): js-id-of(x.id) end).join-str(","), expr-to-js(body)])
+
     | s_app(_, f, args) =>
       format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
+
     | s_obj(_, fields) =>
       fun field-to-js(field):
         format("'~a': ~a", [field.name.s, expr-to-js(field.value)])
       end
       format("RUNTIME.makeObject({~a})", [fields.map(field-to-js).join-str(",")])
+
     | s_extend(_, super, fields) =>
       fun field-to-js(field):
         format("'~a': ~a", [field.name.s, expr-to-js(field.value)])
       end
       format("RUNTIME.getField(~a, '_extend').app({~a})", [expr-to-js(super), fields.map(field-to-js).join-str(",")])
-    | s_var(_, name, value) =>
-      format("~a = ~a",[js-id-of(name.id), expr-to-js(value)])
+
     | s_bracket(_, obj, f) =>
       cases (A.Expr) f:
         | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])
         | else => raise("Non-string lookups not supported")
       end
+
     | s_colon_bracket(_, obj, field) =>
       cases (A.Expr) field:
         | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])
         | else => raise("Non-string lookups not supported")
       end
-    | s_let(_, name, value) =>
-      format("~a = ~a",[js-id-of(name.id), expr-to-js(value)])
-    | s_assign(_, id, value) =>
-      format("~a = ~a",[js-id-of(id), expr-to-js(value)])
+
     | s_id(_, id) => 
       js-id-of(id)
     | s_num(_, n) =>

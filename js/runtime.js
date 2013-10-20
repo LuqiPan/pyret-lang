@@ -72,7 +72,7 @@ var PYRET = (function () {
       });
     }
     var brander = {
-      app: function() {
+      app: function(dummy) {
         return new PBrander();
       }
     };
