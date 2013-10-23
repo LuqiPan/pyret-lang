@@ -77,10 +77,31 @@ var PYRET = (function () {
       }
     };
 
+
+    //raise function generator
+    var appGenerator = function(type) {
+      return function() {
+        throw makeString("check-fun: expected function, got " + type);
+      };
+    }
+
+    var mtdGenerator = function(type) {
+      return function() {
+        throw makeString("check-method: expected method, got " + type);
+      };
+    }
+
     //p-base
     function PBase() {}
     function isBase(v){ return v instanceof PBase }
-    PBase.prototype.brands = new Array();
+    PBase.prototype = {
+      brands: [],
+      dict: {},
+      app: appGenerator("base"),
+      method: mtdGenerator("base")
+    };
+
+
 
     //p-method
     function PMethod(f) {
@@ -89,8 +110,9 @@ var PYRET = (function () {
     function makeMethod(f) { return new PMethod(f); } 
     function isMethod(v) { return v instanceof PMethod; }
     PMethod.prototype = Object.create(PBase.prototype);
-    PMethod.prototype.app = function() { throw "Cannot apply method directly."; };
-    PMethod.prototype.dict = {};
+    PMethod.prototype.app = appGenerator("method");
+
+
 
     //p-fun
     function PFunction(f) {
@@ -99,7 +121,6 @@ var PYRET = (function () {
     function makeFunction(f) { return new PFunction(f); }
     function isFunction(v) { return v instanceof PFunction; }
     PFunction.prototype = Object.create(PBase.prototype);
-    PFunction.prototype.dict = {};
 
     //p-num
     var numberDict = {
@@ -164,8 +185,10 @@ var PYRET = (function () {
     function makeNumber(n) { return new PNumber(n); }
     function isNumber(v) { return v instanceof PNumber; }
     PNumber.prototype = Object.create(PBase.prototype);
-    PNumber.prototype.app = function() { throw "check-fun: expected function, got number"; };
+    PNumber.prototype.app = appGenerator("number");
     PNumber.prototype.dict = numberDict;
+    //end p-num
+
 
     //p-str
     var stringDict = {
@@ -198,8 +221,11 @@ var PYRET = (function () {
     function makeString(s) { return new PString(s); }
     function isString(v) { return v instanceof PString; }
     PString.prototype = Object.create(PBase.prototype);
-    PString.prototype.app = function() { throw "Cannot apply strings."; };
+    PString.prototype.app = appGenerator("string");
+    PString.prototype.method = mtdGenerator("string");
     PString.prototype.dict = stringDict;
+    //end p-str
+
 
     //p-bool
     var boolDict = {
@@ -229,21 +255,35 @@ var PYRET = (function () {
 
     function PBool(b){
       this.b = b;
+      this.app = appGenerator(b);
+      this.method = mtdGenerator(b);
     }
     function makeBool(b) { return new PBool(b); }
     function isBool(v) { return v instanceof PBool; }
     PBool.prototype = Object.create(PBase.prototype);
-    PBool.prototype.app = function() { throw "Cannot apply bools."; };
     PBool.prototype.dict = boolDict;
+    //end p-bool
 
     //p-mutable
-    function PMutable(b){
-      this.b = b;
+    function PMutable(val, reads, writes) {
+      this.val = val;
+      this.reads = reads;
+      this.writes = writes;
     }
-    function makeMutable(b) { return new PMutable(b); }
     function isMutable(v) { return v instanceof PMutable; }
     PMutable.prototype = Object.create(PBase.prototype);
-    PMutable.prototype.app = function() { throw "Cannot apply bools."; };
+    PMutable.prototype.dict = {
+      get: makeMethod(function(self) {
+        return self.val;
+      }),
+      _equals: makeMethod(function(self, other) {
+        return makeBool(self === other);
+      })
+    };
+    PMutable.prototype.set = function(val) {
+      //need to do some verification
+      this.val = val;
+    }
 
     //p-obj
     function PObject(objDict){
@@ -339,7 +379,8 @@ var PYRET = (function () {
     function makeFailResult(exn) { return new FailResult(exn); }
 
     function errToJSON(exn) {
-      return JSON.stringify({exn: String(exn)});
+      if (isObject(exn)) exn = getField(exn, "message");
+      return String(exn.s);
     }
 
     return {
