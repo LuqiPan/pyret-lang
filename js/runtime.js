@@ -1,21 +1,6 @@
 var PYRET = (function () {
 
   function makeRuntime() {
-    /*
-    p-num
-    p-bool
-    p-str
-    p-fun
-    p-method
-    p-nothing
-    p-object
-    p-base
-
-    ---------------------
-
-    p-mutable
-    p-placeholder
-    */
 
     //brander
     function generateUUID() {
@@ -31,9 +16,8 @@ var PYRET = (function () {
     function PBrander() {
       var thisBrand = generateUUID();
 
-      this.dict = {};
-
-      this.dict.brand = makeMethod(function(dummy, val) {
+      return makeObject({
+        brand: makeMethod(function(dummy, val) {
         if(isNumber(val)) {
           var newVal = makeNumber(val.n);
           newVal.brands = val.brands.concat([thisBrand]);
@@ -65,11 +49,11 @@ var PYRET = (function () {
           return newVal;
         }
         throw ("Not yet implemented" + val);
-      });
-
-      this.dict.test = makeMethod(function(dummy, val) {
+      }),
+      test: makeMethod(function(dummy, val) {
         return makeBool(val.brands.indexOf(thisBrand) !== -1);
-      });
+      })
+    });
     }
     var brander = {
       app: function(dummy) {
@@ -111,7 +95,7 @@ var PYRET = (function () {
     function isMethod(v) { return v instanceof PMethod; }
     PMethod.prototype = Object.create(PBase.prototype);
     PMethod.prototype.app = appGenerator("method");
-
+    //end p-method
 
 
     //p-fun
@@ -121,6 +105,7 @@ var PYRET = (function () {
     function makeFunction(f) { return new PFunction(f); }
     function isFunction(v) { return v instanceof PFunction; }
     PFunction.prototype = Object.create(PBase.prototype);
+    //end p-fun
 
     //p-num
     var numberDict = {
@@ -284,6 +269,15 @@ var PYRET = (function () {
       //need to do some verification
       this.val = val;
     }
+    //end p-mutable
+
+    //p-placeholder
+    function PPlaceholder() { this.guards = []; }
+    function isPlaceholder(v) { return v instanceof PPlaceholder; }
+    PPlaceholder.prototype = Object.create(PBase.prototype);
+    PPlaceholder.prototype.app = appGenerator("placeholder");
+    PPlaceholder.prototype.method = mtdGenerator("placeholder");
+    //end p-placeholder
 
     //p-obj
     function PObject(objDict){
@@ -299,6 +293,14 @@ var PYRET = (function () {
     function isObject(v) { return v instanceof PObject; }
     PObject.prototype = Object.create(PBase.prototype);
     PObject.prototype.app = function() { throw "Cannot apply objects."; };
+    //end p-obj
+
+    //Generic Helpers
+    function makePredicate(f) {
+      return makeFunction(function(v) {
+          return makeBool(f(v));
+      });
+    }
 
     function equal(val1, val2) {
       if(isNumber(val1) && isNumber(val2)) {
@@ -385,19 +387,32 @@ var PYRET = (function () {
 
     return {
       nothing: {},
-      isBase: isBase,
+
       makeNumber: makeNumber,
-      isNumber: isNumber,
       makeString: makeString,
-      isString: isString,
       makeBool: makeBool,
-      isBool: isBool,
       makeFunction: makeFunction,
-      isFunction: isFunction,
       makeObject: makeObject,
+      "mk-simple-mutable": makeFunction(function(val) {
+        return new PMutable(val, [], []);
+      }),
+
+      isBase: isBase,
+      isNumber: isNumber,
+      isString: isString,
+      isBool: isBool,
+      isFunction: isFunction,
       isObject: isObject,
-      makeMutable: makeMutable,
       isMutable: isMutable,
+
+      "is-function": makePredicate(isFunction),
+      "is-method": makePredicate(isMethod),
+      "is-object": makePredicate(isObject),
+      "is-number": makePredicate(isNumber),
+      "is-bool": makePredicate(isBool),
+      "is-string": makePredicate(isString),
+      "is-mutable": makePredicate(isMutable),
+
       brander: brander,
       equal: equal,
       getField: getField,
@@ -412,7 +427,6 @@ var PYRET = (function () {
       errToJSON: errToJSON,
 
       "test-print": makeFunction(testPrint),
-      "is-number": makeFunction(function(v){return makeBool(isNumber(v))}),
     }
   }
 
