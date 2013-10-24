@@ -60,6 +60,7 @@ var PYRET = (function () {
         return new PBrander();
       }
     };
+    //end brander
 
 
     //raise function generator
@@ -110,25 +111,27 @@ var PYRET = (function () {
     //p-num
     var numberDict = {
       _plus: makeMethod(function(left, right) {
-        if (isNumber(left) && isNumber(right))
-        { return makeNumber(left.n + right.n); }
-        else
-        { throw "Type error"; };
+        checkPrimitive(isNumber, "plus", [left, right]);
+        return makeNumber(left.n + right.n);
       }),
       _minus: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "minus", [left, right]);
         return makeNumber(left.n - right.n);
       }),
       _times: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "times", [left, right]);
         return makeNumber(left.n * right.n);
       }),
       _divide: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "divide", [left, right]);
         if (right.n !== 0) {
           return makeNumber(left.n / right.n);
         }
         else
-          { throw "Cannot divide by 0"; };
+          { throw makeString("Division by zero"); };
       }),
       _equals: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "equals", [left, right]);
         return makeBool(left.n === right.n);
       }),
       floor: makeMethod(function(val) {
@@ -141,27 +144,35 @@ var PYRET = (function () {
         return makeNumber(Math.exp(val.n));
       }),
       _lessthan: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "lessthan", [left, right]);
         return makeBool(left.n < right.n);
       }),
       _greaterthan: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "greaterthan", [left, right]);
         return makeBool(left.n > right.n);
       }),
       _lessequal: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "lessequal", [left, right]);
         return makeBool(left.n <= right.n);
       }),
       _greaterequal: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "greaterequal", [left, right]);
         return makeBool(left.n >= right.n);
       }),
       max: makeMethod(function(left, right) {
         return makeNumber(Math.max(left.n, right.n));
       }),
       min: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "min", [left, right])
         return makeNumber(Math.min(left.n, right.n));
       }),
       tostring: makeMethod(function(val) {
         return makeString(val.n.toString());
+      }),
+      expt: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "expt", left, right);
+        return makeNumber(Math.pow(left.n, right.n));
       })
-
     };
 
     function PNumber(n) {
@@ -282,17 +293,31 @@ var PYRET = (function () {
     //p-obj
     function PObject(objDict){
       this.dict = objDict;
-      this.dict["_extend"] = makeMethod(function(obj, extendDict) {
-        var mergeDict = {};
-        for (var key in obj.dict) { mergeDict[key] = obj.dict[key]; }
-        for (var key in extendDict) { mergeDict[key] = extendDict[key]; }
-        return makeObject(mergeDict);
-      });
     }
     function makeObject(objDict) { return new PObject(objDict); }
     function isObject(v) { return v instanceof PObject; }
     PObject.prototype = Object.create(PBase.prototype);
     PObject.prototype.app = function() { throw "Cannot apply objects."; };
+    PObject.prototype.extend = function(extendDict) {
+      var mergeDict = {};
+      for (var key in this.dict) { mergeDict[key] = this.dict[key]; }
+      for (var key in extendDict) { mergeDict[key] = extendDict[key]; }
+      return makeObject(mergeDict);
+    };
+    PObject.prototype.mutate = function(mutateDict) {
+      for (var key in mutateDict) { 
+        if(this.dict[key] === 'undefined') { 
+          throw makeString(key + "does not exist")
+        }
+        if(isMutable(this.dict[key])){
+          this.dict[key].set(mutateDict[key]);
+        }
+        else{ 
+          throw makeString("Mutate on a non mutable field " + key); 
+        }
+      }
+      return this;
+    };
     //end p-obj
 
     //Generic Helpers
@@ -300,6 +325,15 @@ var PYRET = (function () {
       return makeFunction(function(v) {
           return makeBool(f(v));
       });
+    }
+
+    function checkPrimitive(f, name, args) {
+      for (var i = 0; i < args.length; i++) {
+        if (!f(args[i])) throw makeString("Bad args to prim: " + name + " : " +
+          Array.prototype.map.call(args, function (arg) {
+            return String(toRepr(arg).s).replace(/\"+/g, ""); 
+          }).join(", "));
+      }
     }
 
     function equal(val1, val2) {
@@ -346,11 +380,21 @@ var PYRET = (function () {
       throw ("toStringJS on an unknown type: " + val);
     }
 
-    function getField(val, str) {
+    function getRawField(val, str) {
       var fieldVal = val.dict[str];
-      if (typeof fieldVal === 'undefined')
-      {
-        throw new ("value not found");
+      if (fieldVal !== 'undefined') {
+        return fieldVal;
+      }
+      else{
+        throw makeString(str + " was not found on " + toRepr(val).s)
+      }
+    }
+
+    function getField(val, str) {
+      var fieldVal = getRawField(val, str);
+
+      if (isMutable(fieldVal)) {
+        throw makeString("Cannot look up mutable field \"" + str +"\" using dot or bracket");
       }
       if (isMethod(fieldVal)) {
         return makeFunction(function() {
@@ -362,10 +406,20 @@ var PYRET = (function () {
       }
     }
 
+    function getMutableField(val, str) {
+      var fieldVal = getRawField(val, str);
+      if (isMutable(fieldVal)) {
+        return fieldVal.val;
+      }
+      else {
+        throw makeString("Cannot look up immutable field\"" + str + "\" with the ! operator");
+      }
+    }
+
     var testPrintOutput = "";
     function testPrint(val) {
       var str = toRepr(val).s;
-      console.log("testPrint: ", val, str);
+      // console.log("testPrint: ", val, str);
       testPrintOutput += str + "\n";
       return val;
     }
@@ -416,6 +470,8 @@ var PYRET = (function () {
       brander: brander,
       equal: equal,
       getField: getField,
+      getRawField: getRawField,
+      getMutableField: getMutableField,
       getTestPrintOutput: function(val) {
         return testPrintOutput + toRepr(val).s;
       },

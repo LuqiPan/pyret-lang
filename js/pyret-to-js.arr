@@ -37,7 +37,8 @@ fun program-to-js(ast, runtime-ids):
        })", [bindings, expr-to-js(block)])
   end
 where:
-  program-to-js(A.parse-tc("o = { mutable x: 5}", "test", {check : false, env : []}), []) is ""
+  program-to-js(A.parse-tc("
+  ", "test", {check : false, env : []}), []) is ""
 end
 
 fun do-block(str):
@@ -101,7 +102,7 @@ fun expr-to-js(ast):
       fun field-to-js(field):
         format("'~a': ~a", [field.name.s, expr-to-js(field.value)])
       end
-      format("RUNTIME.getField(~a, '_extend').app({~a})", [expr-to-js(super), fields.map(field-to-js).join-str(",")])
+      format("~a.extend({~a})", [expr-to-js(super), fields.map(field-to-js).join-str(",")])
 
     | s_bracket(_, obj, f) =>
       cases (A.Expr) f:
@@ -111,9 +112,18 @@ fun expr-to-js(ast):
 
     | s_colon_bracket(_, obj, field) =>
       cases (A.Expr) field:
-        | s_str(_, s) => format("RUNTIME.getField(~a, '~a')", [expr-to-js(obj), s])
+        | s_str(_, s) => format("RUNTIME.getRawField(~a, '~a')", [expr-to-js(obj), s])
         | else => raise("Non-string lookups not supported")
       end
+
+    | s_get_bang(l :: A.Loc, obj :: A.Expr, field :: String) =>
+      format("RUNTIME.getMutableField(~a, '~a')", [expr-to-js(obj), field])
+
+    | s_update(l :: A.Loc, super :: A.Expr, fields) =>
+      fun field-to-js(field):
+        format("'~a': ~a", [field.name.s, expr-to-js(field.value)])
+      end
+      format("~a.mutate({~a})", [expr-to-js(super), fields.map(field-to-js).join-str(",")])
 
     | s_id(_, id) => 
       js-id-of(id)
