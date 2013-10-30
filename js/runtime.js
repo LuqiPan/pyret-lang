@@ -419,20 +419,28 @@ var PYRET = (function () {
     var testPrintOutput = "";
     function testPrint(val) {
       var str = toRepr(val).s;
-      // console.log("testPrint: ", val, str);
+      console.log("testPrint: ", val, str);
       testPrintOutput += str + "\n";
       return val;
     }
 
-    function NormalResult(val) {
+    function NormalResult(val, namespace) {
       this.val = val;
+      this.namespace = namespace;
     }
-    function makeNormalResult(val) { return new NormalResult(val); }
+    function makeNormalResult(val, ns) { return new NormalResult(val, ns); }
 
     function FailResult(exn) {
       this.exn = exn;
     }
     function makeFailResult(exn) { return new FailResult(exn); }
+
+    function PyretException(exnVal) {
+      this.exnVal = exnVal;
+    }
+    function makePyretException(exnVal) {
+      return new PyretException(exnVal);
+    }
 
     function errToJSON(exn) {
       if (isObject(exn)) exn = getField(exn, "message");
@@ -440,49 +448,60 @@ var PYRET = (function () {
     }
 
     return {
-      nothing: {},
-
-      makeNumber: makeNumber,
-      makeString: makeString,
-      makeBool: makeBool,
-      makeFunction: makeFunction,
-      makeObject: makeObject,
-      "mk-simple-mutable": makeFunction(function(val) {
-        return new PMutable(val, [], []);
+      namespace: Namespace({
+        nothing: {},
+        "test-print": makeFunction(testPrint),
+        brander: brander,
+        "check-brand": makeFunction(function() {
+          throw "check-brand NYI";
+        }),
+        Function: makeFunction(function() {
+          throw "function NYI";
+        }),
+        builtins: "Not yet implemented"
       }),
+      runtime: {
+        makeNumber: makeNumber,
+        makeString: makeString,
+        makeBool: makeBool,
+        makeFunction: makeFunction,
+        makeObject: makeObject,
+        "mk-simple-mutable": makeFunction(function(val) {
+          return new PMutable(val, [], []);
+        }),
 
-      isBase: isBase,
-      isNumber: isNumber,
-      isString: isString,
-      isBool: isBool,
-      isFunction: isFunction,
-      isObject: isObject,
-      isMutable: isMutable,
+        isBase: isBase,
+        isNumber: isNumber,
+        isString: isString,
+        isBool: isBool,
+        isFunction: isFunction,
+        isObject: isObject,
+        isMutable: isMutable,
 
-      "is-function": makePredicate(isFunction),
-      "is-method": makePredicate(isMethod),
-      "is-object": makePredicate(isObject),
-      "is-number": makePredicate(isNumber),
-      "is-bool": makePredicate(isBool),
-      "is-string": makePredicate(isString),
-      "is-mutable": makePredicate(isMutable),
+        "is-function": makePredicate(isFunction),
+        "is-method": makePredicate(isMethod),
+        "is-object": makePredicate(isObject),
+        "is-number": makePredicate(isNumber),
+        "is-bool": makePredicate(isBool),
+        "is-string": makePredicate(isString),
+        "is-mutable": makePredicate(isMutable),
 
-      brander: brander,
-      equal: equal,
-      getField: getField,
-      getRawField: getRawField,
-      getMutableField: getMutableField,
-      getTestPrintOutput: function(val) {
-        return testPrintOutput + toRepr(val).s;
-      },
-      NormalResult: NormalResult,
-      FailResult: FailResult,
-      makeNormalResult: makeNormalResult,
-      makeFailResult: makeFailResult,
-      toReprJS: toRepr,
-      errToJSON: errToJSON,
-
-      "test-print": makeFunction(testPrint),
+        equal: equal,
+        getField: getField,
+        getRawField: getRawField,
+        getMutableField: getMutableField,
+        getTestPrintOutput: function(val) {
+          return testPrintOutput + toRepr(val).s;
+        },
+        NormalResult: NormalResult,
+        FailResult: FailResult,
+        makeNormalResult: makeNormalResult,
+        makeFailResult: makeFailResult,
+        toReprJS: toRepr,
+        errToJSON: errToJSON,
+        PyretException: PyretException,
+        makePyretException: makePyretException,
+      }
     }
   }
 
