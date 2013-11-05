@@ -90,9 +90,11 @@ fun program-to-js(ast, runtime-ids):
           end
           ids-to-export = toplevel-ids(ast)
           export-fields = for list.fold(export from "", id from ids-to-export):
+            #MAYBE should add a ';' at the end
             export + format("EXPORT_NAMESPACE = EXPORT_NAMESPACE.set(\"~a\", ~a)\n",
               [id, js-id-of(id)])
           end
+          #MAYBE RUNTIME.runtime.makeNormalResult
           format("(function(RUNTIME, NAMESPACE) {
             try {
               ~a

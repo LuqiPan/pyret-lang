@@ -496,12 +496,12 @@ var PYRET = (function () {
         },
         NormalResult: NormalResult,
         FailResult: FailResult,
-        PyretException: PyretException,
         makeNormalResult: makeNormalResult,
         makeFailResult: makeFailResult,
-        makePyretException: makePyretException,
         toReprJS: toRepr,
-        errToJSON: errToJSON
+        errToJSON: errToJSON,
+        PyretException: PyretException,
+        makePyretException: makePyretException,
       }
     }
   }

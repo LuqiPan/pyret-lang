@@ -11,7 +11,6 @@ function isNumber(RUNTIME, pyretVal) {
   return RUNTIME.runtime.isNumber(pyretVal.val);
 }
 
-
 function testEquals(name, pyretProg1, pyretProg2) {
   return {
     name: name,

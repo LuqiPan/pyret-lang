@@ -135,6 +135,7 @@ MISC = [
 
 fun out-file-of(filename): filename + ".out";
 fun err-file-of(filename): filename + ".err";
+fun js-file-of(filename): filename + ".js";
 
 fun error-to-json(e):
   if builtins.has-field(e, "message"):
@@ -148,6 +149,7 @@ fun generate-output(filename):
   in = F.input-file(filename)
   stdout = F.output-file(out-file-of(filename), false)
   stderr = F.output-file(err-file-of(filename), false)
+  jsout = F.output-file(js-file-of(filename), false)
 
   var the-output = ""
   fun capturing-print(val):
@@ -159,6 +161,10 @@ fun generate-output(filename):
   env = N.whalesong-env.{test-print: capturing-print}
   contents = in.read-file()
   program = A.parse(contents, "test", {check : false})
+
+  jsout.display(
+    P.expr-to-js(
+      A.parse-tc(contents, "test", {check : false, env : env}).block))
 
   data EvalResult:
     | success(val)
@@ -182,6 +188,7 @@ fun generate-output(filename):
 
   stdout.close-file()
   stderr.close-file()
+  jsout.close-file()
   in.close-file()
 end
 
