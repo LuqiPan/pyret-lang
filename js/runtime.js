@@ -128,7 +128,7 @@ var PYRET = (function () {
           return makeNumber(left.n / right.n);
         }
         else
-          { throw makeString("Division by zero"); };
+          { throw makePyretException(makeString("Division by zero")); };
       }),
       _equals: makeMethod(function(left, right) {
         checkPrimitive(isNumber, "equals", [left, right]);
@@ -323,16 +323,16 @@ var PYRET = (function () {
     //Generic Helpers
     function makePredicate(f) {
       return makeFunction(function(v) {
-          return makeBool(f(v));
+        return makeBool(f(v));
       });
     }
 
     function checkPrimitive(f, name, args) {
       for (var i = 0; i < args.length; i++) {
-        if (!f(args[i])) throw makeString("Bad args to prim: " + name + " : " +
+        if (!f(args[i])) throw makePyretException(makeString("Bad args to prim: " + name + " : " +
           Array.prototype.map.call(args, function (arg) {
             return String(toRepr(arg).s).replace(/\"+/g, ""); 
-          }).join(", "));
+          }).join(", ")));
       }
     }
 
@@ -419,70 +419,90 @@ var PYRET = (function () {
     var testPrintOutput = "";
     function testPrint(val) {
       var str = toRepr(val).s;
-      // console.log("testPrint: ", val, str);
+      console.log("testPrint: ", val, str);
       testPrintOutput += str + "\n";
       return val;
     }
 
-    function NormalResult(val) {
+    function NormalResult(val, namespace) {
       this.val = val;
+      this.namespace = namespace;
     }
-    function makeNormalResult(val) { return new NormalResult(val); }
+    function makeNormalResult(val, ns) { return new NormalResult(val, ns); }
 
     function FailResult(exn) {
       this.exn = exn;
     }
     function makeFailResult(exn) { return new FailResult(exn); }
 
+    function PyretException(exnVal) {
+      this.exnVal = exnVal;
+    }
+    function makePyretException(exnVal) {
+      return new PyretException(exnVal);
+    }
+
     function errToJSON(exn) {
-      if (isObject(exn)) exn = getField(exn, "message");
-      return String(exn.s);
+      /*if (isObject(exn)) exn = getField(exn, "message");
+      return String(exn.s);*/
+      return JSON.stringify({exn: String(exn)})
     }
 
     return {
-      nothing: {},
-
-      makeNumber: makeNumber,
-      makeString: makeString,
-      makeBool: makeBool,
-      makeFunction: makeFunction,
-      makeObject: makeObject,
-      "mk-simple-mutable": makeFunction(function(val) {
-        return new PMutable(val, [], []);
+      namespace: Namespace({
+        nothing: {},
+        "test-print": makeFunction(testPrint),
+        brander: brander,
+        "check-brand": makeFunction(function() {
+          throw "check-brand NYI";
+        }),
+        Function: makeFunction(function() {
+          throw "function NYI";
+        }),
+        builtins: "Not yet implemented"
       }),
+      runtime: {
+        makeNumber: makeNumber,
+        makeString: makeString,
+        makeBool: makeBool,
+        makeFunction: makeFunction,
+        makeObject: makeObject,
+        "mk-simple-mutable": makeFunction(function(val) {
+          return new PMutable(val, [], []);
+        }),
 
-      isBase: isBase,
-      isNumber: isNumber,
-      isString: isString,
-      isBool: isBool,
-      isFunction: isFunction,
-      isObject: isObject,
-      isMutable: isMutable,
+        isBase: isBase,
+        isNumber: isNumber,
+        isString: isString,
+        isBool: isBool,
+        isFunction: isFunction,
+        isObject: isObject,
+        isMutable: isMutable,
 
-      "is-function": makePredicate(isFunction),
-      "is-method": makePredicate(isMethod),
-      "is-object": makePredicate(isObject),
-      "is-number": makePredicate(isNumber),
-      "is-bool": makePredicate(isBool),
-      "is-string": makePredicate(isString),
-      "is-mutable": makePredicate(isMutable),
+        "is-function": makePredicate(isFunction),
+        "is-method": makePredicate(isMethod),
+        "is-object": makePredicate(isObject),
+        "is-number": makePredicate(isNumber),
+        "is-bool": makePredicate(isBool),
+        "is-string": makePredicate(isString),
+        "is-mutable": makePredicate(isMutable),
 
-      brander: brander,
-      equal: equal,
-      getField: getField,
-      getRawField: getRawField,
-      getMutableField: getMutableField,
-      getTestPrintOutput: function(val) {
-        return testPrintOutput + toRepr(val).s;
-      },
-      NormalResult: NormalResult,
-      FailResult: FailResult,
-      makeNormalResult: makeNormalResult,
-      makeFailResult: makeFailResult,
-      toReprJS: toRepr,
-      errToJSON: errToJSON,
-
-      "test-print": makeFunction(testPrint),
+        equal: equal,
+        getField: getField,
+        getRawField: getRawField,
+        getMutableField: getMutableField,
+        getTestPrintOutput: function(val) {
+          return testPrintOutput + toRepr(val).s;
+        },
+        NormalResult: NormalResult,
+        FailResult: FailResult,
+        PyretException: PyretException,
+        makeNormalResult: makeNormalResult,
+        makeFailResult: makeFailResult,
+        makePyretException: makePyretException,
+        toReprJS: toRepr,
+        errToJSON: errToJSON
+      }
     }
   }
 

@@ -12,3 +12,6 @@ src/lang/pyret-lib/moorings.rkt
 js/test-runner/tests.js
 *#
 js/tests/**/*.js
+js/createtests.sh
+js/test-runtime.html
+js/testpyret.sh
