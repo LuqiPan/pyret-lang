@@ -304,9 +304,21 @@ var PYRET = (function () {
     PObject.prototype.app = function() { throw "Cannot apply objects."; };
     PObject.prototype.extend = function(extendDict) {
       var mergeDict = {};
+      var updateFlag = false;
       for (var key in this.dict) { mergeDict[key] = this.dict[key]; }
-      for (var key in extendDict) { mergeDict[key] = extendDict[key]; }
-      return makeObject(mergeDict);
+      for (var key in extendDict) { 
+        if (mergeDict[key] !== undefined) {
+          updateFlag = true;
+        }
+        mergeDict[key] = extendDict[key]; 
+      }
+      var o = makeObject(mergeDict);
+
+      if (!updateFlag) {
+        o.brands = this.brands.slice(0);
+      }
+
+      return o;
     };
     PObject.prototype.mutate = function(mutateDict) {
       for (var key in mutateDict) { 
