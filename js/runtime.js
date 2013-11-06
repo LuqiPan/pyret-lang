@@ -66,13 +66,13 @@ var PYRET = (function () {
     //raise function generator
     var appGenerator = function(type) {
       return function() {
-        throw makeString("check-fun: expected function, got " + type);
+        throw makePyretException(makeString("check-fun: expected function, got " + type));
       };
     }
 
     var mtdGenerator = function(type) {
       return function() {
-        throw makeString("check-method: expected method, got " + type);
+        throw makePyretException(makeString("check-method: expected method, got " + type));
       };
     }
 
@@ -256,6 +256,7 @@ var PYRET = (function () {
     }
     function makeBool(b) { return new PBool(b); }
     function isBool(v) { return v instanceof PBool; }
+    function isTrue(b) { return isBool(b) && b.b; }
     PBool.prototype = Object.create(PBase.prototype);
     PBool.prototype.dict = boolDict;
     //end p-bool
@@ -280,6 +281,9 @@ var PYRET = (function () {
       //need to do some verification
       this.val = val;
     }
+    var mkSimpleMutable = function(val) {
+      return new PMutable(val, [], []);
+    };
     //end p-mutable
 
     //p-placeholder
@@ -307,13 +311,13 @@ var PYRET = (function () {
     PObject.prototype.mutate = function(mutateDict) {
       for (var key in mutateDict) { 
         if(this.dict[key] === 'undefined') { 
-          throw makeString(key + "does not exist")
+          throw makePyretException(makeString(key + "does not exist"))
         }
         if(isMutable(this.dict[key])){
           this.dict[key].set(mutateDict[key]);
         }
         else{ 
-          throw makeString("Mutate on a non mutable field " + key); 
+          throw makePyretException(makeString("Mutate on a non mutable field " + key)); 
         }
       }
       return this;
@@ -321,6 +325,26 @@ var PYRET = (function () {
     //end p-obj
 
     //Generic Helpers
+    var checkBrand = makeFunction(function(ck, o, s) {
+      if (isString(s)) {
+        if (isFunction(ck)) {
+          var check_v = ck.app(o);
+          if (isTrue(check_v)){
+            return o;
+          }
+          else {
+            throw makePyretException(s);
+          };
+        }
+        else {
+          throw makePyretException(makeString("non-function"));
+        }
+      }
+      else {
+        throw makePyretException(makeString("check-brand failed"));
+      };
+    });
+
     function makePredicate(f) {
       return makeFunction(function(v) {
         return makeBool(f(v));
@@ -386,7 +410,7 @@ var PYRET = (function () {
         return fieldVal;
       }
       else{
-        throw makeString(str + " was not found on " + toRepr(val).s)
+        throw makePyretException(makeString(str + " was not found on " + toRepr(val).s))
       }
     }
 
@@ -394,7 +418,7 @@ var PYRET = (function () {
       var fieldVal = getRawField(val, str);
 
       if (isMutable(fieldVal)) {
-        throw makeString("Cannot look up mutable field \"" + str +"\" using dot or bracket");
+        throw makePyretException(makeString("Cannot look up mutable field \"" + str +"\" using dot or bracket"));
       }
       if (isMethod(fieldVal)) {
         return makeFunction(function() {
@@ -412,7 +436,7 @@ var PYRET = (function () {
         return fieldVal.val;
       }
       else {
-        throw makeString("Cannot look up immutable field\"" + str + "\" with the ! operator");
+        throw makePyretException(makeString("Cannot look up immutable field\"" + str + "\" with the ! operator"));
       }
     }
 
@@ -451,13 +475,32 @@ var PYRET = (function () {
     return {
       namespace: Namespace({
         nothing: {},
+
+        "is-function": makePredicate(isFunction),
+        "is-method": makePredicate(isMethod),
+        "is-object": makePredicate(isObject),
+        "is-number": makePredicate(isNumber),
+        "is-bool": makePredicate(isBool),
+        "is-string": makePredicate(isString),
+        "is-mutable": makePredicate(isMutable),
+
+        Any: makePredicate(isBase),
+        Function: makePredicate(isFunction),
+        Method: makePredicate(isMethod),
+        Object: makePredicate(isObject),
+        String: makePredicate(isString),
+        Number: makePredicate(isNumber),
+        Mutable: makePredicate(isMutable),
+        Function: makePredicate(isFunction),
+
         "test-print": makeFunction(testPrint),
         brander: brander,
-        "check-brand": makeFunction(function() {
-          throw "check-brand NYI";
-        }),
-        Function: makeFunction(function() {
-          throw "function NYI";
+        "check-brand": checkBrand,
+        "mk-simple-mutable": makeFunction(mkSimpleMutable),
+        "mk-mutable": makeFunction(function(val, read, write) {
+          checkBrand.app(makePredicate(isFunction), read, makeString("Function"));
+          checkBrand.app(makePredicate(isFunction), write, makeString("Function"));
+          return new PMutable(val, [read], [write]);
         }),
         builtins: "Not yet implemented"
       }),
@@ -466,16 +509,15 @@ var PYRET = (function () {
         makeString: makeString,
         makeBool: makeBool,
         makeFunction: makeFunction,
+        makeMethod: makeMethod,
         makeObject: makeObject,
-        "mk-simple-mutable": makeFunction(function(val) {
-          return new PMutable(val, [], []);
-        }),
 
         isBase: isBase,
         isNumber: isNumber,
         isString: isString,
         isBool: isBool,
         isFunction: isFunction,
+        isMethod: isMethod,
         isObject: isObject,
         isMutable: isMutable,
 
