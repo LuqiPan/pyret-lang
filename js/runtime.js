@@ -241,6 +241,12 @@ var PYRET = (function () {
           return makeBool(right.app().b);
         }
       }),
+      tostring: makeMethod(function(self) {
+        return makeString(self.b);
+      }),
+      _torepr: makeMethod(function(self) {
+        return makeString(self.b);
+      }),
       _equals: makeMethod(function(left, right) {
         return makeBool(left.b === right.b);
       }),
@@ -292,6 +298,14 @@ var PYRET = (function () {
     PPlaceholder.prototype = Object.create(PBase.prototype);
     PPlaceholder.prototype.app = appGenerator("placeholder");
     PPlaceholder.prototype.method = mtdGenerator("placeholder");
+    PPlaceholder.prototype.dict = {
+      _torepr: makeMethod(function(self) {
+        return makeString("cyclic-field");
+      }),
+      _tostring: makeMethod(function(self) {
+        return makeString("cyclic-field");
+      })
+    }
     //end p-placeholder
 
     //p-obj
@@ -507,12 +521,21 @@ var PYRET = (function () {
 
         "test-print": makeFunction(testPrint),
         brander: brander,
+        raise: makeFunction(function(e) {
+          throw makePyretException(e);
+        }),
         "check-brand": checkBrand,
         "mk-simple-mutable": makeFunction(mkSimpleMutable),
         "mk-mutable": makeFunction(function(val, read, write) {
           checkBrand.app(makePredicate(isFunction), read, makeString("Function"));
           checkBrand.app(makePredicate(isFunction), write, makeString("Function"));
           return new PMutable(val, [read], [write]);
+        }),
+        "prim-has-field": makeFunction(function(prim, field) {
+          return makeBool(prim.dict[field.s] !== undefined);
+        }),
+        "prim-num-keys": makeFunction(function(prim) {
+          return makeNumber(Object.keys(prim.dict).length);
         }),
         builtins: "Not yet implemented"
       }),

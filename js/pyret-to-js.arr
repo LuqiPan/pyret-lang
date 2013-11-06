@@ -152,6 +152,7 @@ fun expr-to-js(ast):
       format("~a = ~a", [js-id-of(id), expr-to-js(value)])
 
     #| s_if_else(l :: A.Loc, branches :: list.List<IfBranch>, _else :: A.Expr) =>
+      #format("if (~a)")
 
     #| s_try(l :: A.Loc, body :: A.Expr, id :: A.Bind, _except :: A.Expr) => nothing
 
