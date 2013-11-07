@@ -15,10 +15,8 @@ var PYRET = (function () {
     };
 
     function PBrander() {
-      /*
-      A lot of duplicate code here,
-      these can be reduced.
-      */
+      /*a lot of duplicate code here,
+      these can be reduced*/
       var thisBrand = generateUUID();
 
       return makeObject({
@@ -61,8 +59,8 @@ var PYRET = (function () {
     });
     }
     var brander = makeFunction(function() {
-        return new PBrander();
-      });
+      return new PBrander();
+    });
     //end brander
 
 
@@ -752,7 +750,7 @@ var PYRET = (function () {
           return makeNumber(Object.keys(prim.dict).length);
         }),
         "prim-keys": makeFunction(function(prim) {
-          
+
         }),
         builtins: "Not yet implemented"
       }),
