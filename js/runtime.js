@@ -4,6 +4,7 @@ var PYRET = (function () {
 
     //brander
     function generateUUID() {
+      //http://jsfiddle.net/briguy37/2MVFd/
       var d = new Date().getTime();
       var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
           var r = (d + Math.random()*16)%16 | 0;
@@ -14,6 +15,10 @@ var PYRET = (function () {
     };
 
     function PBrander() {
+      /*
+      A lot of duplicate code here,
+      these can be reduced.
+      */
       var thisBrand = generateUUID();
 
       return makeObject({
@@ -55,11 +60,9 @@ var PYRET = (function () {
       })
     });
     }
-    var brander = {
-      app: function(dummy) {
+    var brander = makeFunction(function() {
         return new PBrander();
-      }
-    };
+      });
     //end brander
 
 
@@ -129,6 +132,15 @@ var PYRET = (function () {
     function makeFunction(f, doc) { return new PFunction(f, doc); }
     function isFunction(v) { return v instanceof PFunction; }
     PFunction.prototype = Object.create(PBase.prototype);
+    PFunction.prototype.method = mtdGenerator("function");
+    function applyFunc(f, argList) {
+      if (f.arity === undefined) f.arity = f.app.length;
+      if (f.arity !== argList.length) {
+        throw makePyretException(makeString("Wrong number of arguments given to function."));
+      };
+
+      return f.app.apply(null, argList);
+    }
     //end p-fun
 
     //p-num
@@ -406,6 +418,17 @@ var PYRET = (function () {
     //end p-mutable
 
     //p-placeholder
+    function getPlaceholderValue(p){
+      if (!isPlaceholder(p)){
+        throwTypeError("Placeholder", p);
+      }
+      if (p.v !== undefined) {
+        return p.v;
+      }
+      else {
+        throw makePyretException("Tried to get value from uninitialized placeholder");
+      }
+    }
     function PPlaceholder() { this.guards = []; }
     function isPlaceholder(v) { return v instanceof PPlaceholder; }
     PPlaceholder.prototype = Object.create(PBase.prototype);
@@ -421,7 +444,38 @@ var PYRET = (function () {
       _tostring: makeMethod(function(self) {
         return makeString("cyclic-field");
       }),
-      get: makeMethod(function(self, ))
+      get: makeMethod(function(self) {
+        getPlaceholderValue(self);
+      }),
+      guard: makeMethod(function(self, g) {
+        if (!isPlaceholder(self)) {
+          throwTypeError("Placeholder", self);
+        }
+        else{
+          if (self.v !== undefined) { throw makePyretException(makeString("Tried to set value in already-initialized placeholder")); }
+          checkBrand(makePredicate(isFunction), g, makeString("Function"));
+
+          self.guard.push(g);
+        }
+      }),
+      set: makeMethod(function(self, val) {
+        if (!isPlaceholder(self)) {
+          throwTypeError("Placeholder", self);
+        }
+        else if (self.v !== undefined){
+          throw makePyretException(makeString("Tried to set value in already-initialized placeholder"));
+        }
+        else {
+          for (var i in self.guards){
+            try{
+              self.guards[i].app(v);
+            }
+            catch (e) {
+              throw makePyretException("");
+            }
+          }
+        }
+      })
     }
     //end p-placeholder
 
@@ -522,6 +576,12 @@ var PYRET = (function () {
       else if (isFunction(val1) && isFunction(val2)){
         return val1.app === val2.app;
       }
+      else if (isMutable(val1) && isMutable(val2)) {
+
+      }
+      else if (isPlaceholder(val1) && isPlaceholder(val2)){
+
+      }
       return false;
     }
 
@@ -544,6 +604,12 @@ var PYRET = (function () {
       else if (isObject(val)) {
         return makeString("object");
       }
+      else if (isPlaceholder(val)) {
+        return makeString("cyclic-field");
+      }
+      else if (isMutable(val)) {
+        return makeString("mutable-field");
+      }
       throw ("toStringJS on an unknown type: " + val);
     }
 
@@ -563,11 +629,14 @@ var PYRET = (function () {
       if (isMutable(fieldVal)) {
         throw makePyretException(makeString("Cannot look up mutable field \"" + str +"\" using dot or bracket"));
       }
-      if (isMethod(fieldVal)) {
-        return makeFunction(function() {
+      else if (isPlaceholder(fieldVal)) { return getPlaceholderValue(fieldVal); }
+      else if (isMethod(fieldVal)) {
+        var f = makeFunction(function() {
           var argList = Array.prototype.slice.call(arguments);
           return fieldVal.method.apply(null, [val].concat(argList));
-        });
+        }, fieldVal.dict._doc);
+        f.arity = fieldVal.method.length - 1;
+        return f;
       } else {
         return fieldVal;
       }
@@ -609,15 +678,19 @@ var PYRET = (function () {
       return new PyretException(exnVal);
     }
 
+    function throwTypeError(typename, o) {
+      throw makePyretException(makeString("typecheck failed; expected " + typename + " and got\n" + toRepr(o).s));
+    }
+
     function unwrapException(exn) {
       if (!(exn instanceof PyretException)) throw exn;
       return makeObject({
-          path: makeString(""),
-          line: makeString(""),
-          column: makeString(""),
-          value: exn.exnVal,
-          system: makeBool(exn.exnSys),
-          trace: makeObject({ "is-empty": makeBool(true) })
+        path: makeString(""),
+        line: makeString(""),
+        column: makeString(""),
+        value: exn.exnVal,
+        system: makeBool(exn.exnSys),
+        trace: makeObject({ "is-empty": makeBool(true) })
       });
     }
 
@@ -638,9 +711,9 @@ var PYRET = (function () {
         "is-bool": makePredicate(isBool),
         "is-string": makePredicate(isString),
         "is-mutable": makePredicate(isMutable),
+        "is-placeholder": makePredicate(isMutable),
 
         Any: makePredicate(isBase),
-        Function: makePredicate(isFunction),
         Method: makePredicate(isMethod),
         Object: makePredicate(isObject),
         String: makePredicate(isString),
@@ -649,6 +722,15 @@ var PYRET = (function () {
         Function: makePredicate(isFunction),
 
         "test-print": makeFunction(testPrint),
+        tostring: makeFunction(function(val) {
+          if (val.dict["tostring"] !== undefined) {
+            return getField(val, "tostring").method();
+          }
+          else {
+            return getField(val, "_torepr").method();
+          }
+        }),
+        torepr: makeFunction(toRepr),
         brander: brander,
         raise: makeFunction(function(e) {
           throw makePyretException(e);
@@ -668,6 +750,9 @@ var PYRET = (function () {
         }),
         "prim-num-keys": makeFunction(function(prim) {
           return makeNumber(Object.keys(prim.dict).length);
+        }),
+        "prim-keys": makeFunction(function(prim) {
+          
         }),
         builtins: "Not yet implemented"
       }),
@@ -697,6 +782,7 @@ var PYRET = (function () {
         "is-string": makePredicate(isString),
         "is-mutable": makePredicate(isMutable),
 
+        applyFunc: applyFunc,
         equal: equal,
         getField: getField,
         getRawField: getRawField,

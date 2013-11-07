@@ -165,13 +165,14 @@ fun expr-to-js(ast):
       fun get-id(bind):
         js-id-of(bind.id)
       end
-      format("RUNTIME.makeFunction(function(~a) { return ~a; }, RUNTIME.makeString('~a'))", [args.map(get-id).join-str(","), expr-to-js(body), doc])
+      format("RUNTIME.makeFunction(function(~a) { return ~a; }, RUNTIME.makeString(~s))", [args.map(get-id).join-str(","), expr-to-js(body), doc])
 
     | s_method(l :: A.Loc, args :: list.List<A.Bind>, ann :: A.Ann, doc :: String, body :: A.Expr, check :: A.Expr) =>
       format("RUNTIME.makeMethod(function(~a) { return ~a; }, RUNTIME.makeString('~a'))", [args.map(fun (x): js-id-of(x.id) end).join-str(","), expr-to-js(body), doc])
 
     | s_app(_, f, args) =>
-      format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
+      #format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
+      format("RUNTIME.applyFunc(~a, [~a])", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
 
     | s_obj(_, fields) =>
       fun field-to-js(field):
