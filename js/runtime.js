@@ -86,7 +86,16 @@ var PYRET = (function () {
       method: mtdGenerator("base")
     };
 
-
+    //pnothing
+    function PNothing() {}
+    PNothing.prototype = Object.create(PBase.prototype);
+    PNothing.prototype.dict = {
+      _torepr: makeMethod(function(s) {
+        return makeString("nothing");
+      })
+    };
+    var nothing = new PNothing();
+    //nothing
 
     //p-method
     function PMethod(m, doc) {
@@ -128,13 +137,13 @@ var PYRET = (function () {
         checkPrimitive(isNumber, "plus", [left, right]);
         return makeNumber(left.n + right.n);
       }),
+      _add: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "add", [left, right]);
+        return makeNumber(left.n + right.n);
+      }),
       _minus: makeMethod(function(left, right) {
         checkPrimitive(isNumber, "minus", [left, right]);
         return makeNumber(left.n - right.n);
-      }),
-      _times: makeMethod(function(left, right) {
-        checkPrimitive(isNumber, "times", [left, right]);
-        return makeNumber(left.n * right.n);
       }),
       _divide: makeMethod(function(left, right) {
         checkPrimitive(isNumber, "divide", [left, right]);
@@ -144,18 +153,16 @@ var PYRET = (function () {
         else
           { throw makePyretException(makeString("Division by zero")); };
       }),
+      _times: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "times", [left, right]);
+        return makeNumber(left.n * right.n);
+      }),
+      _torepr: makeMethod(function(self) {
+        return makeString(self.n.toString());
+      }),
       _equals: makeMethod(function(left, right) {
         checkPrimitive(isNumber, "equals", [left, right]);
         return makeBool(left.n === right.n);
-      }),
-      floor: makeMethod(function(val) {
-        return makeNumber(Math.floor(val.n).toFixed(1));
-      }),
-      ceiling: makeMethod(function(val) {
-        return makeNumber(Math.ceil(val.n).toFixed(1));
-      }),
-      exp: makeMethod(function(val) {
-        return makeNumber(Math.exp(val.n));
       }),
       _lessthan: makeMethod(function(left, right) {
         checkPrimitive(isNumber, "lessthan", [left, right]);
@@ -173,15 +180,65 @@ var PYRET = (function () {
         checkPrimitive(isNumber, "greaterequal", [left, right]);
         return makeBool(left.n >= right.n);
       }),
+      tostring: makeMethod(function(val) {
+        return makeString(val.n.toString());
+      }),
+      modulo: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "modulo", [left, right]);
+        return makeNumber(left.n % right.n);
+      }),
+      truncate: makeMethod(function(val) {
+        return makeNumber(Math.floor(val.n));
+      }),
+      abs: makeMethod(function(val) {
+        return makeNumber(Math.abs(vals.n));
+      }),
       max: makeMethod(function(left, right) {
+        checkPrimitive(isNumber, "max", [left, right])
         return makeNumber(Math.max(left.n, right.n));
       }),
       min: makeMethod(function(left, right) {
         checkPrimitive(isNumber, "min", [left, right])
         return makeNumber(Math.min(left.n, right.n));
       }),
-      tostring: makeMethod(function(val) {
-        return makeString(val.n.toString());
+      sin: makeMethod(function(val) {
+        return makeNumber(Math.sin(val.n));
+      }),
+      cos: makeMethod(function(val) {
+        return makeNumber(Math.cos(val.n));
+      }),
+      tan: makeMethod(function(val) {
+        return makeNumber(Math.tan(val.n));
+      }),
+      asin: makeMethod(function(val) {
+        return makeNumber(Math.asin(val.n));
+      }),
+      acos: makeMethod(function(val) {
+        return makeNumber(Math.acos(val.n));
+      }),
+      atan: makeMethod(function(val) {
+        return makeNumber(Math.atan(val.n));
+      }),
+      sqr: makeMethod(function(val) {
+        return makeNumber(val.n * val.n);
+      }),
+      sqrt: makeMethod(function(val) {
+        return makeNumber(Math.sqrt(val.n));
+      }),
+      ceiling: makeMethod(function(val) {
+        return makeNumber(Math.ceil(val.n).toFixed(1));
+      }),
+      floor: makeMethod(function(val) {
+        return makeNumber(Math.floor(val.n).toFixed(1));
+      }),
+      log: makeMethod(function(val) {
+        return makeNumber(Math.log(val.n));
+      }),
+      exp: makeMethod(function(val) {
+        return makeNumber(Math.exp(val.n));
+      }),
+      exact: makeMethod(function(val) {
+        return val;
       }),
       expt: makeMethod(function(left, right) {
         checkPrimitive(isNumber, "expt", left, right);
@@ -297,12 +354,13 @@ var PYRET = (function () {
         }
       }),
       tostring: makeMethod(function(self) {
-        return makeString(self.b);
+        return makeString(self.b.toString());
       }),
       _torepr: makeMethod(function(self) {
-        return makeString(self.b);
+        return makeString(self.b.toString());
       }),
       _equals: makeMethod(function(left, right) {
+        checkPrimitive(isBool, "equals", [left, right]);
         return makeBool(left.b === right.b);
       }),
       _not: makeMethod(function(val) {
@@ -354,12 +412,16 @@ var PYRET = (function () {
     PPlaceholder.prototype.app = appGenerator("placeholder");
     PPlaceholder.prototype.method = mtdGenerator("placeholder");
     PPlaceholder.prototype.dict = {
+      _equals: makeMethod(function(self, other) {
+        checkPrimitive(isPlaceholder, "equals", [self, other]);
+      }),
       _torepr: makeMethod(function(self) {
         return makeString("cyclic-field");
       }),
       _tostring: makeMethod(function(self) {
         return makeString("cyclic-field");
-      })
+      }),
+      get: makeMethod(function(self, ))
     }
     //end p-placeholder
 
