@@ -89,10 +89,16 @@ var PYRET = (function () {
 
 
     //p-method
-    function PMethod(f) {
-      this.method = f;
+    function PMethod(m, doc) {
+      if (doc === undefined) { doc = makeString(""); };
+      this.dict = {
+        _doc: doc,
+        _fun: function () { throw makePyretException(makeString("can't convert a method field into a function.")); }
+      };
+      this.method = m;
+      this.arity = m.length;
     }
-    function makeMethod(f) { return new PMethod(f); } 
+    function makeMethod(m, doc) { return new PMethod(m, doc); } 
     function isMethod(v) { return v instanceof PMethod; }
     PMethod.prototype = Object.create(PBase.prototype);
     PMethod.prototype.app = appGenerator("method");
@@ -100,10 +106,18 @@ var PYRET = (function () {
 
 
     //p-fun
-    function PFunction(f) {
+    function PFunction(f, doc) {
+      if (doc === undefined) { doc = makeString(""); };
+      this.dict = {
+        _doc: doc,
+        _fun: new PMethod(function(self) {
+          return makeFunction(m, doc);
+        }, doc)
+      };
       this.app = f;
+      this.arity = f.length;
     }
-    function makeFunction(f) { return new PFunction(f); }
+    function makeFunction(f, doc) { return new PFunction(f, doc); }
     function isFunction(v) { return v instanceof PFunction; }
     PFunction.prototype = Object.create(PBase.prototype);
     //end p-fun
@@ -190,6 +204,26 @@ var PYRET = (function () {
     var stringDict = {
       _plus: makeMethod(function(left, right) {
         return makeString(left.s + right.s);
+      }),
+      _lessequal: makeMethod(function(left, right) {
+        checkPrimitive(isString, "lessequal", [left, right]);
+        return makeBool(left.s <= right.s);
+      }),
+      _lessthan: makeMethod(function(left, right) {
+        checkPrimitive(isString, "lessthan", [left, right]);
+        return makeBool(left.s < right.s);
+      }),
+      _greaterthan: makeMethod(function(left, right) {
+        checkPrimitive(isString, "greaterthan", [left, right]);
+        return makeBool(left.s > right.s);
+      }),
+      _greaterequal: makeMethod(function(left, right) {
+        checkPrimitive(isString, "greaterequal", [left, right]);
+        return makeBool(left.s >= right.s);
+      }),
+      _equals: makeMethod(function(left,right) {
+        checkPrimitive(isString, "equals", [left, right]);
+        return makeBool(left.s === right.s);
       }),
       contains: makeMethod(function(str, substr) {
         return makeBool(str.s.indexOf(substr.s) != -1);
@@ -492,6 +526,18 @@ var PYRET = (function () {
       return new PyretException(exnVal);
     }
 
+    function unwrapException(exn) {
+      if (!(exn instanceof PyretException)) throw exn;
+      return makeObject({
+          path: makeString(""),
+          line: makeString(""),
+          column: makeString(""),
+          value: exn.exnVal,
+          system: makeBool(exn.exnSys),
+          trace: makeObject({ "is-empty": makeBool(true) })
+      });
+    }
+
     function errToJSON(exn) {
       /*if (isObject(exn)) exn = getField(exn, "message");
       return String(exn.s);*/
@@ -525,6 +571,9 @@ var PYRET = (function () {
           throw makePyretException(e);
         }),
         "check-brand": checkBrand,
+        "mk-placeholder": makeFunction(function() {
+          return new PPlaceholder();
+        }),
         "mk-simple-mutable": makeFunction(mkSimpleMutable),
         "mk-mutable": makeFunction(function(val, read, write) {
           checkBrand.app(makePredicate(isFunction), read, makeString("Function"));
@@ -555,6 +604,7 @@ var PYRET = (function () {
         isMethod: isMethod,
         isObject: isObject,
         isMutable: isMutable,
+        isTrue: isTrue,
 
         "is-function": makePredicate(isFunction),
         "is-method": makePredicate(isMethod),

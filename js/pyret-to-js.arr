@@ -143,27 +143,32 @@ fun expr-to-js(ast):
       expr-to-js(body)
 
     | s_var(l :: A.Loc, name :: A.Bind, value :: A.Expr) =>
-      format("~a = ~a", [js-id-of(name.id), expr-to-js(value)])
+      format("var ~a = ~a", [js-id-of(name.id), expr-to-js(value)])
 
     | s_let(l :: A.Loc, bind :: A.Bind, value :: A.Expr) =>
-      format("~a = ~a",[js-id-of(bind.id), expr-to-js(value)])
+      format("var ~a = ~a",[js-id-of(bind.id), expr-to-js(value)])
 
     | s_assign(l :: A.Loc, id :: String, value :: A.Expr) =>
       format("~a = ~a", [js-id-of(id), expr-to-js(value)])
 
-    #| s_if_else(l :: A.Loc, branches :: list.List<IfBranch>, _else :: A.Expr) =>
-      #format("if (~a)")
+    | s_if_else(l :: A.Loc, branches :: list.List<IfBranch>, _else :: A.Expr) =>
+      elseifs = for list.fold(bs from "", b from branches.rest):
+        bs + format("else if (RUNTIME.isTrue(~a)) { return ~a; }", [expr-to-js(b.test), expr-to-js(b.body)])
+      end
+      do-block(format("if (RUNTIME.isTrue(~a)) { return ~a; } ~a else {return ~a; }",
+        [expr-to-js(branches.first.test), expr-to-js(branches.first.body),
+          elseifs, expr-to-js(_else)]))
+    | s_try(l :: A.Loc, body :: A.Expr, id :: A.Bind, _except :: A.Expr) =>
+      do-block(format("try { return ~a; } catch (~a) { ~a = RUNTIME.unwrapException(~a); return ~a; }", [expr-to-js(body), js-id-of(id.id), js-id-of(id.id), js-id-of(id.id), expr-to-js(_except)]))
 
-    #| s_try(l :: A.Loc, body :: A.Expr, id :: A.Bind, _except :: A.Expr) => nothing
-
-    | s_lam(_, params, args, _, _, body, check) =>
+    | s_lam(l :: A.Loc, params :: list.List<String>, args :: list.List<Bind>, ann :: A.Ann, doc :: String, body :: A.Expr, check :: A.Expr) =>
       fun get-id(bind):
         js-id-of(bind.id)
       end
-      format("RUNTIME.makeFunction(function(~a) { return ~a; })", [args.map(get-id).join-str(","), expr-to-js(body)])
+      format("RUNTIME.makeFunction(function(~a) { return ~a; }, RUNTIME.makeString('~a'))", [args.map(get-id).join-str(","), expr-to-js(body), doc])
 
     | s_method(l :: A.Loc, args :: list.List<A.Bind>, ann :: A.Ann, doc :: String, body :: A.Expr, check :: A.Expr) =>
-      format("RUNTIME.makeMethod(function(~a) { return ~a; })", [args.map(fun (x): js-id-of(x.id) end).join-str(","), expr-to-js(body)])
+      format("RUNTIME.makeMethod(function(~a) { return ~a; }, RUNTIME.makeString('~a'))", [args.map(fun (x): js-id-of(x.id) end).join-str(","), expr-to-js(body), doc])
 
     | s_app(_, f, args) =>
       format("~a.app(~a)", [expr-to-js(f), args.map(expr-to-js).join-str(",")])
