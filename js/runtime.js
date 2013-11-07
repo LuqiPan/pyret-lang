@@ -203,6 +203,7 @@ var PYRET = (function () {
     //p-str
     var stringDict = {
       _plus: makeMethod(function(left, right) {
+        checkPrimitive(isString, "plus", [left, right]);
         return makeString(left.s + right.s);
       }),
       _lessequal: makeMethod(function(left, right) {
@@ -225,23 +226,43 @@ var PYRET = (function () {
         checkPrimitive(isString, "equals", [left, right]);
         return makeBool(left.s === right.s);
       }),
+      append: makeMethod(function(left, right) {
+        checkPrimitive(isString, "append", [left, right]);
+        return makeString(left.s + right.s);
+      }),
       contains: makeMethod(function(str, substr) {
+        checkPrimitive(isString, "contains", [str, substr]);
         return makeBool(str.s.indexOf(substr.s) != -1);
       }),
       replace: makeMethod(function(str, oldvalue, newvalue) {
+        checkPrimitive(isString, "replace", [oldvalue, newvalue]);
         return makeString(str.s.replace(new RegExp(oldvalue.s, 'g'), newvalue.s));
       }),
       substring: makeMethod(function(str, from, to) {
+        checkPrimitive(isNumber, "substring", [from, to]);
         return makeString(str.s.substring(from.n, to.n));
+      }),
+      "char-at": makeMethod(function(str, n) {
+        checkPrimitive(isNumber, "char-at", [n]);
+        return makeString(str.s.charAt(n));
+      }),
+      repeat: makeMethod(function(self, n) {
+        checkPrimitive(isNumber, "repeat", [n]);
+        return makeString(self.s.repeat(n.n));
+      }),
+      length: makeMethod(function(self) {
+        return makeNumber(self.s.length);
+      }),
+      tonumber: makeMethod(function(str) {
+        var n = parseFloat(str.s);
+        if (isNaN(n)) return nothing;
+        return makeNumber(n);
       }),
       tostring: makeMethod(function(str) {
         return makeString(str.s);
       }),
-      tonumber: makeMethod(function(str) {
-        return makeNumber(parseInt(str.s));
-      }),
-      "char-at": makeMethod(function(str, n) {
-        return makeString(str.s.charAt(n));
+      _torepr: makeMethod(function(str) {
+        return makeString("\"" + l.s + "\"");
       })
     };
 
