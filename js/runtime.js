@@ -89,6 +89,7 @@ var PYRET = (function () {
 
     //pnothing
     function PNothing() {}
+    function isNothing(v) { return v instanceof PNothing; }
     PNothing.prototype = Object.create(PBase.prototype);
     PNothing.prototype.dict = {
       _torepr: makeMethod(function(s) {
@@ -522,7 +523,7 @@ var PYRET = (function () {
     };
     PObject.prototype.mutate = function(mutateDict) {
       for (var key in mutateDict) { 
-        if(this.dict[key] === 'undefined') { 
+        if(this.dict[key] === undefined) { 
           throw makePyretException(makeString(key + "does not exist"))
         }
         if(isMutable(this.dict[key])){
@@ -625,12 +626,15 @@ var PYRET = (function () {
       else if (isMutable(val)) {
         return makeString("mutable-field");
       }
+      else if (isNothing(val)) {
+        return makeString("nothing");
+      }
       throw ("toStringJS on an unknown type: " + val);
     }
 
     function getRawField(val, str) {
       var fieldVal = val.dict[str];
-      if (fieldVal !== 'undefined') {
+      if (fieldVal !== undefined) {
         return fieldVal;
       }
       else{
@@ -640,6 +644,8 @@ var PYRET = (function () {
 
     function getField(val, str) {
       var fieldVal = getRawField(val, str);
+        
+
 
       if (isMutable(fieldVal)) {
         throw makePyretException(makeString("Cannot look up mutable field \"" + str +"\" using dot or bracket"));
@@ -717,7 +723,7 @@ var PYRET = (function () {
 
     return {
       namespace: Namespace({
-        nothing: {},
+        nothing: nothing,
 
         "is-function": makePredicate(isFunction),
         "is-method": makePredicate(isMethod),
