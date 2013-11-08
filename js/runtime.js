@@ -745,10 +745,10 @@ var PYRET = (function () {
         "test-print": makeFunction(testPrint),
         tostring: makeFunction(function(val) {
           if (val.dict["tostring"] !== undefined) {
-            return getField(val, "tostring").method();
+            return applyFunc(getField(val, "tostring"), []);
           }
           else {
-            return getField(val, "_torepr").method();
+            return applyFunc(getField(val, "_torepr"), []);
           }
         }),
         torepr: makeFunction(toRepr),
@@ -827,4 +827,3 @@ var PYRET = (function () {
     makeRuntime: makeRuntime
   };
 })();
-
