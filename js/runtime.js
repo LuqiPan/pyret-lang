@@ -102,13 +102,25 @@ var PYRET = (function () {
     function PMethod(m, doc) {
       if (doc === undefined) { doc = makeString(""); };
       this.dict = {
-        _doc: doc,
-        _fun: function () { throw makePyretException(makeString("can't convert a method field into a function.")); }
+        _doc: doc
       };
       this.method = m;
       this.arity = m.length;
     }
-    function makeMethod(m, doc) { return new PMethod(m, doc); } 
+    function makeMethod(m, doc) {
+      var mtd = new PMethod(m, doc);
+
+      var _fun = new PMethod(function(self) {
+        return makeFunction(m, doc);
+      });
+      _fun.dict = {};
+      _fun.dict["_doc"] = doc;
+      _fun.dict["_fun"] = _fun;
+
+      mtd.dict._fun = _fun;
+
+      return mtd;
+    } 
     function isMethod(v) { return v instanceof PMethod; }
     PMethod.prototype = Object.create(PBase.prototype);
     PMethod.prototype.app = appGenerator("method");
@@ -119,15 +131,20 @@ var PYRET = (function () {
     function PFunction(f, doc) {
       if (doc === undefined) { doc = makeString(""); };
       this.dict = {
-        _doc: doc,
-        _fun: new PMethod(function(self) {
-          return makeFunction(m, doc);
-        }, doc)
+        _doc: doc
       };
       this.app = f;
       this.arity = f.length;
     }
-    function makeFunction(f, doc) { return new PFunction(f, doc); }
+    function makeFunction(f, doc) { 
+      var fun = new PFunction(f, doc);
+
+      fun.dict._method = makeMethod(function(self) {
+        return makeMethod(f, doc);
+      })
+
+      return fun; 
+    }
     function isFunction(v) { return v instanceof PFunction; }
     PFunction.prototype = Object.create(PBase.prototype);
     PFunction.prototype.method = mtdGenerator("function");
@@ -424,7 +441,7 @@ var PYRET = (function () {
         return p.v;
       }
       else {
-        throw makePyretException("Tried to get value from uninitialized placeholder");
+        throw makePyretException(makeString("Tried to get value from uninitialized placeholder"));
       }
     }
     function PPlaceholder() { this.guards = []; }
@@ -469,7 +486,7 @@ var PYRET = (function () {
               self.guards[i].app(v);
             }
             catch (e) {
-              throw makePyretException("");
+              throw makePyretException(makeString(""));
             }
           }
         }
@@ -709,7 +726,7 @@ var PYRET = (function () {
         "is-bool": makePredicate(isBool),
         "is-string": makePredicate(isString),
         "is-mutable": makePredicate(isMutable),
-        "is-placeholder": makePredicate(isMutable),
+        "is-placeholder": makePredicate(isPlaceholder),
 
         Any: makePredicate(isBase),
         Method: makePredicate(isMethod),
