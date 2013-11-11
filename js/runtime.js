@@ -633,6 +633,7 @@ var PYRET = (function () {
     }
 
     function getRawField(val, str) {
+      if (str instanceof PString) str = str.s;
       var fieldVal = val.dict[str];
       if (fieldVal !== undefined) {
         return fieldVal;
@@ -644,8 +645,6 @@ var PYRET = (function () {
 
     function getField(val, str) {
       var fieldVal = getRawField(val, str);
-        
-
 
       if (isMutable(fieldVal)) {
         throw makePyretException(makeString("Cannot look up mutable field \"" + str +"\" using dot or bracket"));
@@ -841,6 +840,22 @@ var PYRET = (function () {
           }
           else {
             return makeString(name.s + "()");
+          }
+        }),
+        "data-equals": makeFunction(function(self, other, brand, fields) {
+          var b1 = applyFunc(brand, [other]);
+
+          if(!isTrue(b1)) return b1;
+
+          var flag = true;
+          var lst = fields;
+
+          while (lst.dict["first"] !== undefined) {
+            var thisVal = getField(self, getField(lst, "first").s);
+            var otherVal = getField(other, getField(lst, "first").s);
+
+            flag = flag && applyFunc(getField(thisVal, "_equals"), [otherVal]).b;
+            lst = getField(lst, "rest");
           }
         }),
         builtins: "Not yet implemented"
