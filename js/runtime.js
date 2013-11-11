@@ -453,11 +453,12 @@ var PYRET = (function () {
     PPlaceholder.prototype.dict = {
       _equals: makeMethod(function(self, other) {
         checkPrimitive(isPlaceholder, "equals", [self, other]);
+        return makeBool(self === other)
       }),
       _torepr: makeMethod(function(self) {
         return makeString("cyclic-field");
       }),
-      _tostring: makeMethod(function(self) {
+      tostring: makeMethod(function(self) {
         return makeString("cyclic-field");
       }),
       get: makeMethod(function(self) {
@@ -812,6 +813,7 @@ var PYRET = (function () {
           }
 
           if (obj1.dict !== undefined && obj1.dict["_equals"] !== undefined) {
+            console.log(obj1, obj2);
             return applyFunc(getField(obj1, "_equals"), [obj2]);
           }
           else if(Object.keys(obj1.dict).length == Object.keys(obj2.dict).length) {
@@ -821,7 +823,7 @@ var PYRET = (function () {
             return makeBool(false);
           }
         }),
-        "data-to-repr" = makeFunction(function(val, name, fields) {
+        "data-to-repr": makeFunction(function(val, name, fields) {
           var out = [];
           var fieldList = [];
           var lst = fields;
