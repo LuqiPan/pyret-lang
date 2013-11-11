@@ -773,7 +773,17 @@ var PYRET = (function () {
           return makeNumber(Object.keys(prim.dict).length);
         }),
         "prim-keys": makeFunction(function(prim) {
+          var keys = Object.keys(prim.dict);
+          var obj = makeObject({ "is-empty": makeBool(true) });
+          for (var i in keys) {
+            obj = makeObject({
+              "is-empty": makeBool(false),
+              first: makeString(keys[i]),
+              rest: obj
+            });
+          }
 
+          return obj;
         }),
         builtins: "Not yet implemented"
       }),
