@@ -785,6 +785,64 @@ var PYRET = (function () {
 
           return obj;
         }),
+        "equiv": makeFunction(function(obj1, obj2) {
+          function all_same(o1, o2) {
+            if (isFunction(o1) || isMethod(o1)) {
+              return false;
+            }
+            else {
+              var left_val;
+              var right_val;
+              var same = true;
+
+              for (var key in o1.dict) {
+                if ((o2.dict === undefined) || (o2.dict[key] === undefined)) {
+                  same = false;
+                }
+                else {
+                  left_val = o1.dict[key];
+                  right_val = o2.dict[key];
+                  same = same && equiv(left_val, right_val);
+                }
+
+                if (!same) break;
+              }
+
+              return same;
+            }
+          }
+
+          if (obj1.dict !== undefined && obj1.dict["_equals"] !== undefined) {
+            return applyFunc(getField(obj1, "_equals"), [obj2]);
+          }
+          else if(Object.keys(obj1.dict).length == Object.keys(obj2.dict).length) {
+            return makeBool(all_same(obj1, obj2));
+          }
+          else {
+            return makeBool(false);
+          }
+        }),
+        "data-to-repr" = makeFunction(function(val, name, fields) {
+          var out = [];
+          var fieldList = [];
+          var lst = fields;
+
+          if(lst.dict["first"] !== undefined){
+            do {
+              fieldList.push(getField(lst, "first"));
+              lst = getField(lst, "rest");
+            } while (lst.dict["first"] !== undefined);
+
+            for (var f in fieldList) {
+              out.push(toRepr(getField(val, fieldList[f].s)).s);
+            }
+
+            return makeString(name.s + "(" + out.join(", ") + ")");
+          }
+          else {
+            return makeString(name.s + "()");
+          }
+        }),
         builtins: "Not yet implemented"
       }),
       runtime: {

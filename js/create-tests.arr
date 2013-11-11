@@ -239,11 +239,16 @@ fun get-dir-sections(path, create-test):
   end
 end
 
+my-moorings-ast = A.parse-tc(
+    read-then-close("libs/my-moorings.arr"),
+    "my-moorings.arr",
+     { check : false, env : JS-ENV }
+  )
+
 fun create-print-test(name, program, out, err):
   print("Registering basic test: " + name)
-  str-test-case(name, program, test-print(out, err))
+  str-test-case(name, program, test-lib(my-moorings-ast, out, err))
 end
-
 
 moorings-ast = A.parse-tc(
     read-then-close("libs/moorings.arr"),
@@ -265,7 +270,7 @@ fun create-list-test(name, program, out, err):
   str-test-case(name, program, test-lib(list-lib-ast, out, err))
 end
 
-#all-tests("tests")
+all-tests("tests")
 all-tests("moorings-tests")
 all-tests("list-lib-tests")
 
