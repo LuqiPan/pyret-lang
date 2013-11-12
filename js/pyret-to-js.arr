@@ -158,8 +158,9 @@ fun expr-to-js(ast):
       do-block(format("if (RUNTIME.isTrue(~a)) { return ~a; } ~a else {return ~a; }",
         [expr-to-js(branches.first.test), expr-to-js(branches.first.body),
           elseifs, expr-to-js(_else)]))
+
     | s_try(l :: A.Loc, body :: A.Expr, id :: A.Bind, _except :: A.Expr) =>
-      do-block(format("try { return ~a; } catch (~a) { return ~a; }", [expr-to-js(body), js-id-of(id.id), expr-to-js(_except)]))
+      do-block(format("try { return ~a; } catch (~a) { ~a = RUNTIME.unwrapException(~a); return ~a; }", [expr-to-js(body), js-id-of(id.id), js-id-of(id.id), js-id-of(id.id), expr-to-js(_except)]))
 
     | s_lam(l :: A.Loc, params :: list.List<String>, args :: list.List<Bind>, ann :: A.Ann, doc :: String, body :: A.Expr, check :: A.Expr) =>
       fun get-id(bind):

@@ -692,11 +692,12 @@ var PYRET = (function () {
     }
     function makeFailResult(exn) { return new FailResult(exn); }
 
-    function PyretException(exnVal) {
+    function PyretException(exnVal, exnSys) {
       this.exnVal = exnVal;
+      this.exnSys = exnSys;
     }
     function makePyretException(exnVal) {
-      return new PyretException(exnVal);
+      return new PyretException(exnVal, false);
     }
 
     function throwTypeError(typename, o) {
@@ -705,21 +706,22 @@ var PYRET = (function () {
 
     function unwrapException(exn) {
       if (!(exn instanceof PyretException)) throw exn;
+      console.log(exn);
       return makeObject({
         path: makeString(""),
         line: makeString(""),
         column: makeString(""),
         value: exn.exnVal,
         system: makeBool(exn.exnSys),
-        trace: makeObject({ "is-empty": makeBool(true) })
       });
     }
 
-    function errToJSON(exn) {
-      /*if (isObject(exn)) exn = getField(exn, "message");
-      return String(exn.s);*/
-      return JSON.stringify({exn: String(exn)})
-    }
+    /*function errToJSON(exn) {
+      if (isObject(exn)) exn = getField(exn, "message");
+      return String(exn.s);
+      return JSON.stringify({exn: String(exn)});
+      return exn;
+    }*/
 
     return {
       namespace: Namespace({
@@ -901,9 +903,9 @@ var PYRET = (function () {
         makeNormalResult: makeNormalResult,
         makeFailResult: makeFailResult,
         toReprJS: toRepr,
-        errToJSON: errToJSON,
         PyretException: PyretException,
         makePyretException: makePyretException,
+        unwrapException: unwrapException,
       }
     }
   }
