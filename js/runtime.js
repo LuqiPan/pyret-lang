@@ -21,37 +21,38 @@ var PYRET = (function () {
 
       return makeObject({
         brand: makeMethod(function(dummy, val) {
-        if(isNumber(val)) {
-          var newVal = makeNumber(val.n);
+          var newVal;
+          if (isObject(val)) {
+            newVal = makeObject(val.dict);
+          }
+          else if(isNumber(val)) {
+            newVal = makeNumber(val.n);
+          }
+          else if (isString(val)) {
+            newVal = makeString(val.s);
+          }
+          else if (isBool(val)) {
+            newVal = makeBool(val.b);
+          }
+          else if (isFunction(val)) {
+            newVal = makeFunction(val.app, val.dict._doc);
+          }
+          else if (isMethod(val)) {
+            newVal = makeMethod(val.method, val.dict._doc);
+          }
+          else if (isMutable(val)) {
+            newVal = makeMutable(val.val, val.reads.slice(0), val.writes.slice(0));
+          }
+          else if (isPlaceholder(val)) {
+            newVal = new PPlaceholder();
+
+            for (var i in val.guards) {
+              applyFunc(getField(val, "guard"), [val.guards[i]]);
+            }
+            newVal.set(val.val);
+          }
           newVal.brands = val.brands.concat([thisBrand]);
           return newVal;
-        }
-        else if (isString(val)) {
-          var newVal = makeString(val.s);
-          newVal.brands = val.brands.concat([thisBrand]);
-          return newVal;
-        }
-        else if (isBool(val)) {
-          var newVal = makeBool(val.b);
-          newVal.brands = val.brands.concat([thisBrand]);
-          return newVal;
-        }
-        else if (isFunction(val)) {
-          var newVal = makeFunction(val.app);
-          newVal.brands = val.brands.concat([thisBrand]);
-          return newVal;
-        }
-        else if (isMethod(val)) {
-          var newVal = makeMethod(val.method);
-          newVal.brands = val.brands.concat([thisBrand]);
-          return newVal;
-        }
-        else if (isObject(val)) {
-          var newVal = makeObject(val.dict);
-          newVal.brands = val.brands.concat([thisBrand]);
-          return newVal;
-        }
-        throw ("Not yet implemented" + val);
       }),
       test: makeMethod(function(dummy, val) {
         return makeBool(val.brands.indexOf(thisBrand) !== -1);
@@ -414,6 +415,11 @@ var PYRET = (function () {
       this.reads = reads;
       this.writes = writes;
     }
+    function makeMutable(val, reads, writes) {
+      if (reads === undefined) reads = [];
+      if (writes === undefined) writes = [];
+      return new PMutable(val, reads, writes);
+    }
     function isMutable(v) { return v instanceof PMutable; }
     PMutable.prototype = Object.create(PBase.prototype);
     PMutable.prototype.dict = {
@@ -470,9 +476,9 @@ var PYRET = (function () {
         }
         else{
           if (self.v !== undefined) { throw makePyretException(makeString("Tried to set value in already-initialized placeholder")); }
-          checkBrand(makePredicate(isFunction), g, makeString("Function"));
+          checkBrand.app(makePredicate(isFunction), g, makeString("Function"));
 
-          self.guard.push(g);
+          self.guards.push(g);
         }
       }),
       set: makeMethod(function(self, val) {
@@ -488,7 +494,9 @@ var PYRET = (function () {
               self.guards[i].app(v);
             }
             catch (e) {
-              throw makePyretException(makeString(""));
+              throw makePyretExceptionSys(makeObject({
+                message: e
+              }));
             }
           }
         }
@@ -698,6 +706,9 @@ var PYRET = (function () {
     }
     function makePyretException(exnVal) {
       return new PyretException(exnVal, false);
+    }
+    function makePyretExceptionSys(exnVal) {
+      return new PyretException(exnVal, true);
     }
 
     function throwTypeError(typename, o) {
