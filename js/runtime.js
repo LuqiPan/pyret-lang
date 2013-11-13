@@ -494,9 +494,11 @@ var PYRET = (function () {
               self.guards[i].app(v);
             }
             catch (e) {
-              throw makePyretExceptionSys(makeObject({
-                message: e
-              }));
+              /*throw makePyretExceptionSys(makeObject({
+                message: e,
+                type: makeString("")
+              }));*/
+              throw makePyretException(e.exnVal);
             }
           }
         }
@@ -734,6 +736,12 @@ var PYRET = (function () {
       return exn;
     }*/
 
+    error = makeObject({
+      'make-error' : makeFunction(function(e) {
+        return e.exnVal;
+      })
+    })
+
     return {
       namespace: Namespace({
         nothing: nothing,
@@ -873,7 +881,7 @@ var PYRET = (function () {
             lst = getField(lst, "rest");
           }
         }),
-        builtins: "Not yet implemented"
+        error: error
       }),
       runtime: {
         makeNumber: makeNumber,

@@ -112,7 +112,7 @@ fun program-to-js(ast, runtime-ids):
       end
   end
 where:
-  program-to-js(A.parse-tc("fun (x): x + 1 end
+  program-to-js(A.parse-tc("
   ", "test", {check : false, env : []}), []) is ""
 end
 
