@@ -21,13 +21,6 @@ data List:
     append(self, other): other end
   | link(first, rest :: List) with:
     length(self): 1 + self.rest.length() end,
-    _torepr(self):
-      "[" +
-        for raw-fold(combined from torepr(self:first), elt from self:rest):
-          combined + ", " + torepr(elt)
-        end
-      + "]"
-    end,
     append(self, other): self.first^link(self.rest.append(other)) end
 sharing:
   _plus(self, other): self.append(other) end

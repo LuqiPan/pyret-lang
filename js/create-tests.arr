@@ -270,7 +270,7 @@ fun create-list-test(name, program, out, err):
   str-test-case(name, program, test-lib(list-lib-ast, out, err))
 end
 
-all-tests("tests")
+#all-tests("tests")
 all-tests("moorings-tests")
 all-tests("list-lib-tests")
 

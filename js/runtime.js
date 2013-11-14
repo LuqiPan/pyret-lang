@@ -14,6 +14,7 @@ var PYRET = (function () {
       return uuid;
     };
 
+    //brander object
     function PBrander() {
       var thisBrand = generateUUID();
 
@@ -51,11 +52,11 @@ var PYRET = (function () {
           }
           newVal.brands = val.brands.concat([thisBrand]);
           return newVal;
-      }),
-      test: makeMethod(function(dummy, val) {
-        return makeBool(val.brands.indexOf(thisBrand) !== -1);
-      })
-    });
+        }),
+        test: makeMethod(function(dummy, val) {
+          return makeBool(val.brands.indexOf(thisBrand) !== -1);
+        })
+      });
     }
     var brander = makeFunction(function() {
       return new PBrander();
@@ -547,6 +548,7 @@ var PYRET = (function () {
     //end p-obj
 
     //Generic Helpers
+    //check-brand
     var checkBrand = makeFunction(function(ck, o, s) {
       if (isString(s)) {
         if (isFunction(ck)) {
@@ -567,12 +569,14 @@ var PYRET = (function () {
       };
     });
 
+    //make function for predicate
     function makePredicate(f) {
       return makeFunction(function(v) {
         return makeBool(f(v));
       });
     }
 
+    //check function for primitive
     function checkPrimitive(f, name, args) {
       for (var i = 0; i < args.length; i++) {
         if (!f(args[i])) throw makePyretException(makeString("Bad args to prim: " + name + " : " +
@@ -610,6 +614,8 @@ var PYRET = (function () {
       return false;
     }
 
+    //toRepr
+    //-for string is inconsistent
     function toRepr(val) {
       if(isNumber(val)) {
         return makeString(String(val.n));
@@ -734,6 +740,7 @@ var PYRET = (function () {
       });
     }
 
+    //errToJSON is no longer used
     /*function errToJSON(exn) {
       if (isObject(exn)) exn = getField(exn, "message");
       return String(exn.s);
@@ -741,6 +748,7 @@ var PYRET = (function () {
       return exn;
     }*/
 
+    //error object for now
     error = makeObject({
       'make-error' : makeFunction(function(e) {
         return e.exnVal;
