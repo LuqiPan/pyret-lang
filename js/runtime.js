@@ -15,8 +15,6 @@ var PYRET = (function () {
     };
 
     function PBrander() {
-      /*a lot of duplicate code here,
-      these can be reduced*/
       var thisBrand = generateUUID();
 
       return makeObject({
@@ -348,7 +346,7 @@ var PYRET = (function () {
         return makeString(str.s);
       }),
       _torepr: makeMethod(function(str) {
-        return makeString("\"" + l.s + "\"");
+        return makeString("\"" + str.s + "\"");
       })
     };
 
@@ -623,13 +621,20 @@ var PYRET = (function () {
         return makeString(String(val.b));
       }
       else if (isFunction(val)) {
-        return makeString("fun: end");
+        return makeString("fun(): end");
       }
       else if (isMethod(val)) {
         return makeString("method: end");
       }
       else if (isObject(val)) {
-        return makeString("object");
+        if (val.dict._torepr === undefined) {
+          var fields = [];
+          for (var i in val.dict) { fields.push(i + ": " + toRepr(val.dict[i]).s); };
+          return makeString("{" + fields.join(", ") + "}");
+        }
+        else{
+          return getField(val, "_torepr").app();
+        }
       }
       else if (isPlaceholder(val)) {
         return makeString("cyclic-field");
@@ -881,8 +886,31 @@ var PYRET = (function () {
             lst = getField(lst, "rest");
           }
         }),
+
+        builtins: makeObject({
+          'Eq': makeFunction(function() {
+            var b = applyFunc(brander, []);
+
+            return makeObject({
+              extend: makeFunction(function(obj) {
+                obj.extend({
+                  eq: makeMethod(function(self, other) {
+                    var selfResult = applyFunc(getField(b, 'test'), [self]);
+                    var otherResult = applyFunc(getField(b, 'test'), [other]);
+
+                    return makeBool(selfResult.b && otherResult.b);
+                  })
+                })
+              }),
+              brand: makeFunction(function(obj) {
+                applyFunc(getField(b, 'brand'), [obj]);
+              })
+            })
+          })
+        }),
         error: error
       }),
+
       runtime: {
         makeNumber: makeNumber,
         makeString: makeString,
