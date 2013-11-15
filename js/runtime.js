@@ -621,7 +621,7 @@ var PYRET = (function () {
         return makeString(String(val.n));
       }
       else if (isString(val)) {
-        return makeString('"' + val.s + '"');
+        return makeString('"' + val.s + "\"");
       }
       else if (isBool(val)) {
         return makeString(String(val.b));

@@ -1,0 +1,206 @@
+<html>
+<head>
+
+<link rel="stylesheet"
+href="../lib/jasmine/lib/jasmine-core/jasmine.css"></link>
+<script src="../lib/jasmine/lib/jasmine-core/jasmine.js"></script>
+<script src="../lib/jasmine/lib/jasmine-core/jasmine-html.js"></script>
+<script src="../lib/jasmine/lib/jasmine-core/boot.js"></script>
+
+<script src="runtime.js"></script>
+<script src="namespace.js"></script>
+
+</head>
+<body>
+</body>
+<script>
+describe("runtime", function() {
+  it("should make numbers", function() {
+    var RUNTIME = PYRET.makeRuntime();
+    var n = RUNTIME.runtime.makeNumber(5);
+    expect(n.n).toEqual(5);
+  })
+  it("should be base", function() {
+    var RUNTIME = PYRET.makeRuntime();
+    var n = RUNTIME.runtime.makeNumber(5);
+    expect(RUNTIME.runtime.isBase(n)).toEqual(true);
+  })
+  it("check-Brand", function() {
+  	var RUNTIME = PYRET.makeRuntime();
+  	var c = RUNTIME.namespace.get('check-brand');
+  	expect(RUNTIME.runtime.isFunction(c)).toEqual(true);
+  })
+  it("make function", function() {
+  	var RUNTIME = PYRET.makeRuntime();
+  	var f = RUNTIME.runtime.makeFunction(function (){return false;})
+  	expect(RUNTIME.runtime.isFunction(f)).toEqual(true);
+  })
+  it("check brand number", function() {
+  	var R = PYRET.makeRuntime();
+  	RUNTIME = R.runtime;
+  	var cb = R.namespace.get('check-brand');
+  	isnum = R.namespace.get('Number');
+  	expect(R.runtime.isFunction(isnum)).toEqual(true);
+  	cb.app(R.namespace.get('Number'), RUNTIME.makeNumber(5), RUNTIME.makeString('will not be used'));
+  })
+  it("have no brand after extend", function() {
+  	var R = PYRET.makeRuntime();
+  	RUNTIME = R.runtime;
+  	brander630439 = R.namespace.get('brander');
+  	//console.log(brander630439);
+  	//console.log(brander630439.app);
+  	var b1758730 = RUNTIME.applyFunc(brander630439, []);
+    var b2758741 = RUNTIME.applyFunc(brander630439, []);
+
+    //console.log(b1758730);
+    //console.log(b2758741);
+
+  	expect(true).toEqual(true);
+  })
+  it("bool to string", function() {
+  	var R = PYRET.makeRuntime().runtime;
+  	var b = R.makeBool("true");
+  	/*console.log(b);
+  	console.log(R.getField);
+  	console.log(R.getField(b, 'tostring').app());*/
+  	expect(R.getField(b, 'tostring').app().s).toEqual("true");
+  })
+  it("sould have doc string", function() {
+  	var R = PYRET.makeRuntime().runtime;
+  	var f = R.makeFunction(function() { return true; });
+  	//console.log(R.getField(f, "_doc"));
+  	expect(true).toEqual(true);
+  })
+  it("2 + 2", function() {
+  	var RUNTIME = PYRET.makeRuntime().runtime;
+  	//console.log(RUNTIME);
+  	f = RUNTIME.getField(RUNTIME.makeNumber(2), '_plus');
+  	//console.log(f.arity);
+  	RUNTIME.applyFunc(f, [RUNTIME.makeNumber(2)]);
+  	expect(true).toEqual(true);
+  })
+  it("should not get field", function(){
+    RUNTIME = PYRET.makeRuntime().runtime;
+    var o = RUNTIME.makeObject({});
+    //console.log(o);
+    try {
+      var x = RUNTIME.getField(o, 'x');
+      //console.log(x);
+    }
+    catch(e){
+      //console.log(e);
+    }
+    expect(true).toEqual(true);
+  })
+  it("should tostring", function() {
+    var R = PYRET.makeRuntime();
+    var RUNTIME = R.runtime;
+
+    var tostring830034 = R.namespace.get('tostring');
+    //console.log(tostring830034);
+
+    var str = RUNTIME.applyFunc(tostring830034, [RUNTIME.makeNumber(400)]);
+    //console.log(str);
+
+    var fun = RUNTIME.getField(RUNTIME.makeNumber(5), "tostring");
+    //console.log(fun);
+
+    expect(true).toEqual(true);
+  })
+})
+describe("placeholder", function() {
+  it("should pass printl", function() {
+    var R = PYRET.makeRuntime();
+    var RUNTIME = R.runtime;
+    var NAMESPACE = R.namespace;
+
+    var equiv1460590 = NAMESPACE.get('equiv');
+    var builtins676044 = RUNTIME.makeObject({"equiv": equiv1460590});
+
+    var mk_DASH_placeholder852763 = NAMESPACE.get("mk-placeholder");
+    var test_DASH_print722676 = NAMESPACE.get("test-print");
+
+    var p11000873 = RUNTIME.applyFunc(mk_DASH_placeholder852763, []);
+    //console.log(RUNTIME.applyFunc(test_DASH_print722676, [RUNTIME.applyFunc(RUNTIME.getField(p11000873, 'tostring'), [])]));
+    expect(true).toEqual(true);
+  })
+  it("should pass simple", function(){
+    var R = PYRET.makeRuntime();
+    var RUNTIME = R.runtime;
+    var NAMESPACE = R.namespace;
+
+    var mk_DASH_placeholder853241 = NAMESPACE.get("mk-placeholder");
+
+    var p1009001 = RUNTIME.applyFunc(mk_DASH_placeholder853241, []);
+    var Number677550 = NAMESPACE.get('Number');
+    var check_DASH_brand677549 = NAMESPACE.get('check-brand');
+    //console.log(Number677550);
+    //console.log(check_DASH_brand677549);
+
+    RUNTIME.applyFunc(RUNTIME.getField(p1009001, 'guard'), [RUNTIME.makeFunction(function (n10120821012185) {
+        return (function () {
+            var n931576 = RUNTIME.applyFunc(RUNTIME.makeFunction(function (specimen10120831012187) {
+                return (function () {
+                    return RUNTIME.applyFunc(check_DASH_brand677549, [Number677550, specimen10120831012187, RUNTIME.makeString("Number")]);
+                })();
+            }, RUNTIME.makeString("internal contract for Number")), [n10120821012185]);
+            return (function () {
+                return n931576;
+            })();
+        })();
+    }, RUNTIME.makeString(""))]);
+  })
+})
+describe("data", function() {
+  it("data-print", function(){
+    var R = PYRET.makeRuntime();
+    var RUNTIME = R.runtime;
+    var NAMESPACE = R.namespace;
+    var brander676506 = NAMESPACE.get('brander');
+        var Eq1461448 = RUNTIME.makeFunction(function () {
+        return (function () {
+            return (function () {
+                var b776673 = RUNTIME.applyFunc(brander676506, []);
+                return RUNTIME.makeObject({
+                    'extend': RUNTIME.makeFunction(function (obj3329351461459) {
+                        return (function () {
+                            var obj677762 = obj3329351461459;
+                            return (function () {
+                                return obj677762.extend({
+                                    'eq': RUNTIME.makeMethod(function (self676530, other676544) {
+                                        return (function () {
+                                            return RUNTIME.applyFunc(RUNTIME.getField(RUNTIME.applyFunc(RUNTIME.getField(b776673, 'test'), [self676530]), '_and'), [RUNTIME.makeFunction(function () {
+                                                return (function () {
+                                                    return RUNTIME.applyFunc(RUNTIME.getField(b776673, 'test'), [other676544]);
+                                                })();
+                                            }, RUNTIME.makeString(""))]);
+                                        })();
+                                    }, RUNTIME.makeString(""))
+                                });
+                            })();
+                        })();
+                    }, RUNTIME.makeString("")),
+                    'brand': RUNTIME.makeFunction(function (obj3329361461543) {
+                        return (function () {
+                            var obj677762 = obj3329361461543;
+                            return (function () {
+                                return RUNTIME.applyFunc(RUNTIME.getField(b776673, 'brand'), [obj677762]);
+                            })();
+                        })();
+                    }, RUNTIME.makeString(""))
+                });
+            })();
+        })();
+    }, RUNTIME.makeString(""));
+    var builtins676518 = RUNTIME.makeObject({
+        'Eq': Eq1461448
+    });
+
+    var D684100684581 = RUNTIME.applyFunc(brander676506, []);
+    var D_DASH_mixins684101684592 = RUNTIME.getField(builtins676518, 'Eq');
+    console.log(D_DASH_mixins684101684592);
+  })
+})
+</script>
+
+</html>
