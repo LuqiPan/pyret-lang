@@ -14,3 +14,4 @@ js/test-runner/tests.js
 js/tests/**/*.js
 js/list-lib-tests/**/*.js
 js/moorings-tests/**/*.js
+js/mytests/**/*.js

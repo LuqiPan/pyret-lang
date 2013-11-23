@@ -271,15 +271,22 @@ fun create-list-test(name, program, out, err):
 end
 
 #all-tests("tests")
-all-tests("moorings-tests")
-all-tests("list-lib-tests")
+#all-tests("moorings-tests")
+#all-tests("list-lib-tests")
 
-BASIC-TESTS = get-dir-sections("tests", create-print-test)
-MOORINGS-TESTS = get-dir-sections("moorings-tests", create-moorings-test)
-LIST-LIB-TESTS = get-dir-sections("list-lib-tests", create-list-test)
+#BASIC-TESTS = get-dir-sections("tests", create-print-test)
+#MOORINGS-TESTS = get-dir-sections("moorings-tests", create-moorings-test)
+#LIST-LIB-TESTS = get-dir-sections("list-lib-tests", create-list-test)
+
+#mytests to make things easier
+all-tests("mytests")
+MY-TESTS = get-dir-sections("mytests", create-print-test)
+#mytests
+
 
 generate-test-files(
-    [test-section("misc", MISC)] +
-    BASIC-TESTS +    
-    MOORINGS-TESTS +    
-    LIST-LIB-TESTS)
+#    [test-section("misc", MISC)] +
+#    BASIC-TESTS +    
+#    MOORINGS-TESTS +    
+#    LIST-LIB-TESTS)
+     MY-TESTS)
