@@ -200,6 +200,7 @@ end
 
 fun arg(l, name): A.s_bind(l, name, A.a_blank);
 fun lam(l, args, body): A.s_lam(l, [], args, A.a_blank, "anon lam", body, A.s_block(l, []));
+fun mtd(l, args, body): A.s_method(l, args, A.a_blank, "anon method", body, A.s_block(l, []));
 app = A.s_app
 
 K = "$k"
@@ -233,9 +234,53 @@ fun cps(ast):
               app(l, id(l, "$fv"), [id(l, K), id(l, "$argv")]))]))]))
       else:
         punt()
+        #need to care about generate string names for args
+        mycont = for fold(cont from app(l, id(l, "$fv"), [id(l, K)] + ["argv#"]), e from es):
+          app(l, cps(e), lam(l, [arg(l, "$argv#")], cont))
+        end
+        lam(l, [arg(l, K)],
+          app(l, cps(f), [lam(l, [arg(l, "$fv")], mycont)]))
       end
 
     # My own try to CPS things:
+    | s_user_block(l, body) => cps(s_block(l, body))
+
+    | s_assign(l, id, value) => lam(l, [arg(l, K)], app(l, id(l, K), ast))
+
+    | s_if_else(l, branches, _else) => 
+      fun cps-branch(branch):
+        IfBranch(branch.test, cps(branch.body))
+      end
+      s_if_else(l, branches.map(cps-branch), cps(_else)) 
+
+    | s_try(l, body, id, _except) => s_try(l, cps(body), id, cps(_except)) 
+
+    | s_lam(l, _, args, _, _, body, _) => 
+      lam(l, [arg(l, K)], 
+        app(l, id(l, K), 
+          lam(l, args + [arg(l, "dyn-k")],
+            app(l, cps(b), id(l, "dyn-k")))))
+
+    | s_method =>
+      mtd(l, [arg(l, K)],
+        app(l, id(l, K), 
+          lam(l, args + [arg(l, "dyn-k")],
+            app(l, cps(b), id(l, "dyn-k")))))
+
+    | s_obj(_, fields) => lam(l, [arg(l, K)], app(l, id(l, K), ast))
+
+    | s_extend(_, super, fields) => lam(l, [arg(l, K)], app(l, id(l, K), ast))
+
+    | s_colon_bracket(_, obj, fields) => lam(l, [arg(l, K)], app(l, id(l, K), ast))
+
+    | s_get_bang(_, obj, field) => lam(l, [arg(l, K)], app(l, id(l, K), ast))
+
+    | s_update(_, super, fields) => lam(l, [arg(l, K)], app(l, id(l, K), ast))
+
+    | s_bool(l, b) => lam(l, [arg(l, K)], app(l, id(l, K), ast))
+
+    | s_str(l, s) => lam(l, [arg(l, K)], app(l, id(l, K), ast)) 
+    
     | s_id(l, s) => lam(l, [arg(l, K)], app(l, id(l, K), ast))
     # End
 
